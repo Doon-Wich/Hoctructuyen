@@ -45,9 +45,10 @@ class PaymentController extends Controller
 
             DB::commit();
 
-            $vnp_TmnCode = env('VNPAY_TMN_CODE');
-            $vnp_HashSecret = env('VNPAY_HASH_SECRET');
-            $vnp_Url = env('VNPAY_URL');
+            $vnp_TmnCode = config('vnpay.tmn_code');
+            $vnp_HashSecret = config('vnpay.hash_secret');
+            $vnp_Url = config('vnpay.url');
+            $vnp_Returnurl = config('vnpay.return_url') . "?orderCode={$orderCode}";
 
             $vnp_TxnRef = $orderCode;
             $vnp_OrderInfo = "Thanh toán khóa học: {$course->name}";
@@ -56,8 +57,6 @@ class PaymentController extends Controller
             $vnp_CurrCode = "VND";
             $vnp_Command = "pay";
             $vnp_IpAddr = $_SERVER['REMOTE_ADDR'];
-
-            $vnp_Returnurl = env('VNPAY_RETURN_URL') . "?orderCode={$orderCode}";
 
             $inputData = [
                 "vnp_Version" => "2.1.0",
@@ -73,6 +72,8 @@ class PaymentController extends Controller
                 "vnp_ReturnUrl" => $vnp_Returnurl,
                 "vnp_TxnRef" => $vnp_TxnRef
             ];
+
+            Log::info('VNPAY_TMN_CODE: ' . $vnp_TmnCode);
 
             ksort($inputData);
             $query = "";
@@ -90,7 +91,7 @@ class PaymentController extends Controller
 
             $vnp_Url = $vnp_Url . "?" . $query;
             if (isset($vnp_HashSecret)) {
-                $vnpSecureHash = hash_hmac('sha512', $hashdata, $vnp_HashSecret);
+                $vnpSecureHash =   hash_hmac('sha512', $hashdata, $vnp_HashSecret);
                 $vnp_Url .= 'vnp_SecureHash=' . $vnpSecureHash;
             }
 
@@ -104,7 +105,7 @@ class PaymentController extends Controller
 
     public function vnpayCallback(Request $request)
     {
-        $vnp_TxnRef = $request->query('vnp_TxnRef'); 
+        $vnp_TxnRef = $request->query('vnp_TxnRef');
         $vnp_ResponseCode = $request->query('vnp_ResponseCode');
 
         $payment = Payment::where('transaction_id', $vnp_TxnRef)->first();

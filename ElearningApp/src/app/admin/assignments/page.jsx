@@ -19,6 +19,8 @@ import FileUpload from "@/components/FileUpload";
 
 export default function AssignmentManagerPage() {
   const [assignments, setAssignments] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [modules, setModules] = useState([]);
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,21 +41,50 @@ export default function AssignmentManagerPage() {
     }
   };
 
-  const fetchLessons = async () => {
+  const fetchCourses = async () => {
     try {
-      const res = await axios.get("/api/lessons");
-      const data = res.data.data || [];
-      setLessons(data);
+      const res = await axios.get("/api/courses");
+      const data = Array.isArray(res.data.data) ? res.data.data : res.data || [];
+      setCourses(data);
     } catch (error) {
       console.error(error);
-      message.error("Không thể tải danh sách bài học");
+      message.error("Không thể tải danh sách khoá học");
     }
   };
 
   useEffect(() => {
     fetchAssignments();
-    fetchLessons();
+    fetchCourses();
   }, []);
+
+  const loadModules = (courseId) => {
+    form.setFieldsValue({ module_id: null, lesson_id: null });
+    setModules([]);
+    setLessons([]);
+    if (!courseId) return;
+
+    axios
+      .get(`/api/modules?course_id=${courseId}`)
+      .then((res) => {
+        const data = Array.isArray(res?.data?.data) ? res.data.data : [];
+        setModules(data);
+      })
+      .catch(() => message.error("Không tải được danh sách chương"));
+  };
+
+  const loadLessons = (moduleId) => {
+    form.setFieldsValue({ lesson_id: null });
+    setLessons([]);
+    if (!moduleId) return;
+
+    axios
+      .get(`/api/lessons?module_id=${moduleId}`)
+      .then((res) => {
+        const data = Array.isArray(res?.data?.data) ? res.data.data : [];
+        setLessons(data);
+      })
+      .catch(() => message.error("Không tải được danh sách bài học"));
+  };
 
   const handleSubmit = async () => {
     try {
@@ -114,8 +145,18 @@ export default function AssignmentManagerPage() {
               setEditingAssignment(record);
               form.setFieldsValue({
                 ...record,
+                course_id: record.lesson?.module?.course_id,
+                module_id: record.lesson?.module_id,
+                lesson_id: record.lesson_id,
                 deadline: record.deadline ? dayjs(record.deadline) : null,
+                attachment: record.attachment,
               });
+              if (record.lesson?.module?.course_id) {
+                loadModules(record.lesson.module.course_id);
+              }
+              if (record.lesson?.module_id) {
+                loadLessons(record.lesson.module_id);
+              }
               setIsModalOpen(true);
             }}
           >
@@ -143,6 +184,8 @@ export default function AssignmentManagerPage() {
         onClick={() => {
           form.resetFields();
           setEditingAssignment(null);
+          setModules([]);
+          setLessons([]);
           setIsModalOpen(true);
         }}
       >
@@ -164,12 +207,47 @@ export default function AssignmentManagerPage() {
           setIsModalOpen(false);
           setEditingAssignment(null);
           form.resetFields();
+          setModules([]);
+          setLessons([]);
         }}
         onOk={() => form.submit()}
         okText="Lưu"
         cancelText="Hủy"
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
+          <Form.Item
+            name="course_id"
+            label="Khoá học"
+            rules={[{ required: true, message: "Vui lòng chọn khoá học" }]}
+          >
+            <Select
+              placeholder="Chọn khoá học"
+              options={courses.map((c) => ({ label: c.name, value: c.id }))}
+              onChange={loadModules}
+            />
+          </Form.Item>
+
+          <Form.Item name="module_id" label="Chương (không bắt buộc)">
+            <Select
+              placeholder="Chọn chương"
+              allowClear
+              options={modules.map((m) => ({ label: m.name, value: m.id }))}
+              onChange={loadLessons}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="lesson_id"
+            label="Bài học"
+            rules={[{ required: true, message: "Vui lòng chọn bài học" }]}
+          >
+            <Select
+              placeholder="Chọn bài học"
+              allowClear
+              options={lessons.map((l) => ({ label: l.name, value: l.id }))}
+            />
+          </Form.Item>
+
           <Form.Item
             name="title"
             label="Tên bài tập"
@@ -178,26 +256,11 @@ export default function AssignmentManagerPage() {
             <Input placeholder="Nhập tên bài tập" />
           </Form.Item>
 
-          <Form.Item
-            name="lesson_id"
-            label="Thuộc bài học"
-            rules={[{ required: true, message: "Vui lòng chọn bài học" }]}
-          >
-            <Select
-              placeholder="Chọn bài học"
-              options={lessons.map((l) => ({ label: l.name, value: l.id }))}
-            />
-          </Form.Item>
-
           <Form.Item name="description" label="Mô tả">
             <Input.TextArea placeholder="Mô tả bài tập" />
           </Form.Item>
 
-          <Form.Item
-            name="attachment"
-            label="File đính kèm"
-            valuePropName="file"
-          >
+          <Form.Item name="attachment" label="File đính kèm" valuePropName="file">
             <FileUpload
               onChange={(url) => form.setFieldValue("attachment", url)}
               initialValue={editingAssignment?.attachment}

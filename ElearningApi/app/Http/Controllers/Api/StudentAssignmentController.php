@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Api\BaseResourceController;
+use App\Models\Assignment;
 use App\Models\StudentAssignmentSubmission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +22,21 @@ class StudentAssignmentController extends BaseResourceController
             'file_upload' => 'nullable|string', // nhận URL hoặc path
             'content' => 'nullable|string',
         ];
+    }
+
+    public function index(Request $request)
+    {
+        $query = Assignment::with('lesson')->orderBy('id', 'desc');
+
+        // Nếu truyền lesson_id, lọc theo lesson
+        if ($request->has('lesson_id')) {
+            $query->where('lesson_id', $request->query('lesson_id'));
+        }
+
+        $data = $query->get();
+
+        // Trả về chuẩn data
+        return $this->statusResponse(200, 200, 'Thành công', ['data' => $data]);
     }
 
     public function store(Request $request)

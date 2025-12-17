@@ -1,24 +1,28 @@
 "use client";
-import { useState, useEffect } from "react";
+
+import { useEffect, useState } from "react";
 import {
   Table,
   Button,
   Modal,
   Form,
   Input,
-  InputNumber,
   Space,
   Popconfirm,
   message,
+  Upload,
 } from "antd";
-import axios from "@/utils/axios";
 import TextArea from "antd/es/input/TextArea";
+import { UploadOutlined } from "@ant-design/icons";
+import axios from "@/utils/axios";
 
-export default function LessonManager({ moduleId }) {
+export default function LessonManager({ moduleId, courseId }) {
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState(null);
+  const [fileList, setFileList] = useState([]);
+  const [uploading, setUploading] = useState(false);
   const [form] = Form.useForm();
 
   const fetchLessons = async () => {
@@ -26,17 +30,11 @@ export default function LessonManager({ moduleId }) {
     setLoading(true);
     try {
       const res = await axios.get(`/api/lessons?module_id=${moduleId}`);
-
       const data = Array.isArray(res?.data?.data)
         ? res.data.data
         : Array.isArray(res?.data)
         ? res.data
         : [];
-
-      if (data.length === 0) {
-        console.warn("Không có bài học nào trong module:", moduleId);
-      }
-
       setLessons(data);
     } catch (error) {
       console.error("Lỗi khi tải danh sách bài học:", error);
@@ -53,19 +51,48 @@ export default function LessonManager({ moduleId }) {
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      if (editingLesson)
-        await axios.put(`/api/lessons/${editingLesson.id}`, {
+      let lessonId = editingLesson?.id;
+
+      // Thêm hoặc sửa lesson
+      if (editingLesson) {
+        await axios.put(`/api/lessons/${lessonId}`, {
           ...values,
           module_id: moduleId,
         });
-      else await axios.post(`/api/lessons`, { ...values, module_id: moduleId });
+      } else {
+        const res = await axios.post(`/api/lessons`, {
+          ...values,
+          module_id: moduleId,
+        });
+        lessonId = res.data.id;
+      }
+
+      // Upload file
+      if (fileList.length > 0) {
+        const formData = new FormData();
+        formData.append("course_id", courseId);
+        formData.append("file", fileList[0].originFileObj);
+        formData.append("module_id", moduleId);
+        formData.append("lesson_id", lessonId);
+        formData.append("title", values.title);
+
+        setUploading(true);
+        await axios.post("/api/documents", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        setUploading(false);
+        message.success("Upload tài liệu thành công!");
+      }
 
       message.success("Lưu bài học thành công!");
       setIsModalOpen(false);
       fetchLessons();
       form.resetFields();
-    } catch {
-      message.error("Không thể lưu bài học!");
+      setFileList([]);
+    } catch (e) {
+      console.error(e);
+      message.error("Lưu bài học thất bại!");
+      setUploading(false);
     }
   };
 
@@ -121,6 +148,7 @@ export default function LessonManager({ moduleId }) {
         onClick={() => {
           setEditingLesson(null);
           form.resetFields();
+          setFileList([]);
           setIsModalOpen(true);
         }}
       >
@@ -132,6 +160,7 @@ export default function LessonManager({ moduleId }) {
         open={isModalOpen}
         onCancel={() => setIsModalOpen(false)}
         onOk={handleSubmit}
+        okButtonProps={{ loading: uploading }}
       >
         <Form form={form} layout="vertical">
           <Form.Item
@@ -161,6 +190,40 @@ export default function LessonManager({ moduleId }) {
             ]}
           >
             <Input />
+          </Form.Item>
+
+          <Form.Item
+            name="title"
+            label="Tiêu đề tài liệu"
+            rules={[{ required: true, message: "Nhập tiêu đề tài liệu!" }]}
+          >
+            <Input placeholder="VD: Slide chương 1" />
+          </Form.Item>
+
+          <Form.Item
+            label="Tài liệu đính kèm"
+            valuePropName="fileList"
+            getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
+          >
+            <Upload.Dragger
+              beforeUpload={() => false} // ngăn auto upload
+              maxCount={1}
+              fileList={fileList}
+              onChange={({ fileList }) => setFileList(fileList)}
+              style={{
+                borderStyle: "dashed",
+                borderRadius: 8,
+                padding: "24px 0",
+                textAlign: "center",
+              }}
+            >
+              <p className="ant-upload-drag-icon">
+                <UploadOutlined style={{ fontSize: 24 }} />
+              </p>
+              <p className="ant-upload-text">
+                Kéo thả file vào đây hoặc bấm để chọn
+              </p>
+            </Upload.Dragger>
           </Form.Item>
         </Form>
       </Modal>

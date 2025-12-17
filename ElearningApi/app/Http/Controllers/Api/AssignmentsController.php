@@ -8,11 +8,9 @@ use App\Models\Assignment;
 class AssignmentsController extends BaseResourceController
 {
     protected $model = Assignment::class;
-    protected $with = ['lesson']; // load luôn lesson khi lấy data
+    protected $with = ['lesson']; 
 
-    /**
-     * Validation rules khi tạo mới
-     */
+
     protected function getStoreValidationRules()
     {
         return [
@@ -24,9 +22,6 @@ class AssignmentsController extends BaseResourceController
         ];
     }
 
-    /**
-     * Validation rules khi update
-     */
     protected function getUpdateValidationRules($id)
     {
         return [
@@ -37,10 +32,7 @@ class AssignmentsController extends BaseResourceController
             'deadline'    => 'nullable|date',
         ];
     }
-
-    /**
-     * Lấy danh sách bài tập theo lesson
-     */
+    
     public function getByLesson($lessonId)
     {
         $assignments = Assignment::with($this->with)

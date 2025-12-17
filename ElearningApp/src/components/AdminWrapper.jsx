@@ -13,7 +13,8 @@ import {
   HighlightOutlined,
   FormOutlined,
   QuestionCircleOutlined,
-  FileProtectOutlined
+  FileProtectOutlined,
+  BookTwoTone
 } from "@ant-design/icons";
 import "@ant-design/v5-patch-for-react-19";
 import Link from "next/link";
@@ -77,6 +78,11 @@ export default function AdminWrapper({ children }) {
             },
             {
               key: "8",
+              icon: <BookTwoTone />,
+              label: <Link href="/admin/documents">Tài liệu</Link>,
+            },
+            {
+              key: "9",
               icon: <SettingOutlined />,
               label: <Link href="/admin/settings">Cài đặt</Link>,
             },

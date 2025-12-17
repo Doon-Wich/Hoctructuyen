@@ -12,7 +12,7 @@ class DocumentController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'course_id' => 'required',
+            'lesson_id' => 'required',
             'title' => 'required',
             'file' => 'required|file|mimes:pdf,txt,md,docx|max:100000',
         ]);
@@ -25,7 +25,8 @@ class DocumentController extends Controller
             'lesson_id' => $request->lesson_id,
             'title' => $request->title,
             'file_path' => $path,
-            'mime_type' => $request->file('file')->getClientMimeType(),
+            'original_name' => $request->file('file')->getClientOriginalName(),
+            'file_type' => $request->file('file')->getClientMimeType(),
             'status' => 'pending'
         ]);
 

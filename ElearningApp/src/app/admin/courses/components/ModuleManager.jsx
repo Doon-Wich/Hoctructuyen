@@ -174,7 +174,7 @@ export default function ModuleManager({ open, onClose, courseId }) {
         footer={null}
         width={800}
       >
-        <LessonManager moduleId={selectedModuleId} />
+        <LessonManager moduleId={selectedModuleId} courseId={courseId} />
       </Modal>
     </Modal>
   );

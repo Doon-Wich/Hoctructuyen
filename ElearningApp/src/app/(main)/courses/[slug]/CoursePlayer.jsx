@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "@/utils/axios";
 import { Button, message, Modal, Progress } from "antd";
+import { MessageOutlined } from "@ant-design/icons";
+import ChatBox from "@/components/ChatBox";
 import {
   PlayCircleOutlined,
   DownOutlined,
@@ -26,6 +28,7 @@ export default function CoursePlayer({ slug, courseHash }) {
   const [totalLessons, setTotalLessons] = useState(0);
   const [canTakeQuiz, setCanTakeQuiz] = useState(true);
   const [showQuizModal, setShowQuizModal] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
 
   totalLessons;
   const router = useRouter();
@@ -103,45 +106,6 @@ export default function CoursePlayer({ slug, courseHash }) {
 
     fetchTracking();
   }, [currentLesson]);
-
-  // useEffect(() => {
-  //   if (!course || trackingLoaded) return;
-  //   setTrackingLoaded(true);
-
-  //   const fetchAllTracking = async () => {
-  //     try {
-  //       const allLessons = course.modules.flatMap((m) => m.lessons);
-  //       const updatedLessons = await Promise.all(
-  //         allLessons.map(async (lesson) => {
-  //           try {
-  //             const res = await axios.get(
-  //               `/api/lesson-tracking/get/${lesson.id}`
-  //             );
-  //             return {
-  //               ...lesson,
-  //               tracking: res.data.data || null,
-  //             };
-  //           } catch (err) {
-  //             return { ...lesson, tracking: null };
-  //           }
-  //         })
-  //       );
-
-  //       const updatedModules = course.modules.map((m) => ({
-  //         ...m,
-  //         lessons: updatedLessons.filter((l) =>
-  //           m.lessons.some((x) => x.id === l.id)
-  //         ),
-  //       }));
-
-  //       setCourse({ ...course, modules: updatedModules });
-  //     } catch (err) {
-  //       console.error("Không thể tải tracking:", err);
-  //     }
-  //   };
-
-  //   fetchAllTracking();
-  // }, [course, trackingLoaded]);
 
   useEffect(() => {
     if (!currentLesson?.video_url) return;
@@ -276,8 +240,8 @@ export default function CoursePlayer({ slug, courseHash }) {
         (l.id === currentLesson?.id && tracking?.is_completed)
     ).length;
     if (allLessons.length > 0 && doneCount === allLessons.length) {
-      if(canTakeQuiz){
-         setShowQuizModal(true); 
+      if (canTakeQuiz) {
+        setShowQuizModal(true);
       }
       setCanTakeQuiz(false);
     }
@@ -408,7 +372,7 @@ export default function CoursePlayer({ slug, courseHash }) {
 
           <h4 className="mt-3">{currentLesson?.name}</h4>
 
-          <AssignmentSubmission lessonId={currentLesson?.id} />
+          <AssignmentSubmission key={currentLesson?.id} lessonId={currentLesson?.id} />
         </div>
 
         <div
@@ -499,6 +463,35 @@ export default function CoursePlayer({ slug, courseHash }) {
           Bài tiếp theo
         </button>
       </div>
+
+      {chatOpen && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 80, // cách icon một khoảng
+            right: 24,
+            zIndex: 1100,
+          }}
+        >
+          <ChatBox lessonId={1} />
+        </div>
+      )}
+
+      {/* Nút chat nổi */}
+      <Button
+        type="primary"
+        shape="circle"
+        size="large"
+        icon={<MessageOutlined />}
+        style={{
+          position: "fixed",
+          bottom: 24,
+          right: 24,
+          zIndex: 1050,
+          boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+        }}
+        onClick={() => setChatOpen((prev) => !prev)}
+      />
 
       <Modal
         title="Bài kiểm tra"

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AssignmentsController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\CourseController;
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\FileUploadController;
@@ -84,6 +85,10 @@ Route::middleware(['auth:sanctum', CheckTokenExpiration::class])->group(function
     Route::post('/quiz/{quizId}/submit', [QuizAttemptController::class, 'submit']);
     Route::get('/quiz/{quiz}/attempt', [QuizAttemptController::class, 'getAttempt']);
 
-    //Upload tài liệu
-    Route::get('/documents', [DocumentController::class, 'store']);
+
+
+    //Chatbot
+    Route::post('/chat', [ChatController::class, 'chat']);
 });
+    //Upload tài liệu
+    Route::post('/documents', [DocumentController::class, 'store']);

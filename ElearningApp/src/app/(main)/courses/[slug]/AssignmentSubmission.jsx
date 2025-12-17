@@ -17,15 +17,19 @@ export default function AssignmentSubmission({ lessonId }) {
   useEffect(() => {
     if (!lessonId) return;
 
+    setAssignment(null);
+    setSubmission(null);
+    setFileUrl("");
+    setContent("");
+    setLoading(true);
+
     const fetchAssignment = async () => {
       try {
-        setLoading(true);
-
-        const res = await axios.get(`/api/assignments`, {
+        const res = await axios.get(`/api/student-assignment-submissions`, {
           params: { lesson_id: lessonId },
         });
 
-        const assignmentData = res.data.data[0] || null;
+        const assignmentData = res.data?.data?.data?.[0] || null;
         setAssignment(assignmentData);
 
         if (assignmentData) {
@@ -33,7 +37,7 @@ export default function AssignmentSubmission({ lessonId }) {
             `/api/student-assignment-submissions/${assignmentData.id}/get`
           );
 
-          const sub = resSubmission.data.data || {
+          const sub = resSubmission.data?.data || {
             content: "",
             file_upload: "",
             submitted_at: null,
@@ -70,6 +74,8 @@ export default function AssignmentSubmission({ lessonId }) {
       return message.error("Bạn phải nhập nội dung hoặc upload file");
     }
 
+    if (!assignment) return;
+
     const payload = {
       assignment_id: assignment.id,
       content: JSON.stringify({ text: content }),
@@ -78,13 +84,12 @@ export default function AssignmentSubmission({ lessonId }) {
 
     try {
       await axios.post("/api/student-assignment-submissions", payload);
-
       message.success("Nộp bài thành công");
 
       const resSubmission = await axios.get(
         `/api/student-assignment-submissions/${assignment.id}/get`
       );
-      setSubmission(resSubmission.data.data || null);
+      setSubmission(resSubmission.data?.data || null);
     } catch (err) {
       console.error(err);
       message.error("Nộp bài thất bại");
@@ -99,7 +104,6 @@ export default function AssignmentSubmission({ lessonId }) {
 
   return (
     <div className="mt-3 p-4 border rounded bg-light position-relative shadow-sm">
-      {/* Trạng thái nộp bài góc trên phải */}
       <div
         className="position-absolute"
         style={{ top: 16, right: 16, textAlign: "right" }}
@@ -127,14 +131,13 @@ export default function AssignmentSubmission({ lessonId }) {
       <h5 className="mb-2">{assignment.title}</h5>
       <p className="mb-3">{assignment.description}</p>
 
-      {/* 2 editor ngang */}
       <div style={{ display: "flex", gap: 16 }}>
         <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
           <label className="fw-bold">Bài làm học sinh:</label>
           <CodeEditor
             value={content}
             onChange={setContent}
-            readOnly={isGraded} // khóa nếu đã có feedback
+            readOnly={isGraded}
             style={{ flex: 1, minHeight: 300 }}
           />
           <div className="mt-2">
@@ -142,7 +145,7 @@ export default function AssignmentSubmission({ lessonId }) {
             <FileUpload
               folder="assignments"
               initialValue={fileUrl}
-              onChange={(url) => setFileUrl(url)}
+              onChange={setFileUrl}
               disabled={isGraded}
             />
           </div>
@@ -159,9 +162,11 @@ export default function AssignmentSubmission({ lessonId }) {
         </div>
       </div>
 
-      {/* Ẩn nút submit nếu đã chấm */}
       {!isGraded && (
-        <button onClick={handleSubmit} className="btn btn-primary btn-sm mt-3">
+        <button
+          onClick={handleSubmit}
+          className="btn btn-primary btn-sm mt-3"
+        >
           {isSubmitted ? "Cập nhật bài nộp" : "Nộp bài"}
         </button>
       )}

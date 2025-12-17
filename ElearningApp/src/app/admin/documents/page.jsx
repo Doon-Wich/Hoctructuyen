@@ -30,6 +30,8 @@ export default function UploadDocumentPage() {
         let data = [];
         if (Array.isArray(res.data)) data = res.data;
         else if (res.data && Array.isArray(res.data.data)) data = res.data.data;
+
+        setCourses(data); // ← Cần set vào state
       })
       .catch(() => message.error("Không tải được danh sách khóa học"));
   }, []);
@@ -93,7 +95,7 @@ export default function UploadDocumentPage() {
 
   return (
     <div style={{ padding: 32, maxWidth: 700, margin: "0 auto" }}>
-      <Card title="📄 Upload tài liệu RAG" bordered>
+      <Card title=" Upload tài liệu RAG" variant="outlined">
         <Form layout="vertical" form={form} onFinish={handleSubmit}>
           <Form.Item
             name="course_id"
@@ -144,13 +146,14 @@ export default function UploadDocumentPage() {
             <Input placeholder="VD: Slide chương 1" />
           </Form.Item>
 
-          {/* FILE */}
           <Form.Item
             name="file"
             label="File tài liệu"
+            valuePropName="fileList"
+            getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
             rules={[{ required: true, message: "Chọn file!" }]}
           >
-            <Upload beforeUpload={() => false}>
+            <Upload beforeUpload={() => false} maxCount={1}>
               <Button icon={<UploadOutlined />}>Chọn file</Button>
             </Upload>
           </Form.Item>

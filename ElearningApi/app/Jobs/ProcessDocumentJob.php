@@ -2,8 +2,8 @@
 
 namespace App\Jobs;
 
-use App\Services\EmbeddingService;
-use App\Services\QdrantService;
+use App\Models\Document;
+use App\Services\PdfRagIngestService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -13,45 +13,16 @@ class ProcessDocumentJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable;
 
-    public function __construct(
-        protected int $documentId,
-        protected string $rawText
-    ) {}
+    protected int $documentId;
 
-    public function handle(
-        EmbeddingService $embeddingService,
-        QdrantService $qdrant
-    ) {
-        // 1. Chunk
-        $chunks = $this->chunkText($this->rawText);
-
-        foreach ($chunks as $index => $chunk) {
-
-            // 2. Embed chunk (MiniLM)
-            $vector = $embeddingService->embed($chunk);
-
-            // 3. Save vector -> Qdrant
-            $qdrant->upsert(
-                collection: 'documents',
-                vector: $vector,
-                payload: [
-                    'document_id' => $this->documentId,
-                    'chunk_index' => $index,
-                    'text' => $chunk,
-                ]
-            );
-        }
+    public function __construct(int $documentId)
+    {
+        $this->documentId = $documentId;
     }
 
-    private function chunkText(string $text): array
+    public function handle(PdfRagIngestService $ingest)
     {
-        $chunkSize = 400;
-
-        $words = explode(' ', $text);
-        $chunks = array_chunk($words, $chunkSize);
-
-        return array_map(function ($chunk) {
-            return implode(' ', $chunk);
-        }, $chunks);
+        $document = Document::findOrFail($this->documentId);
+        $ingest->ingest($document);
     }
 }

@@ -12,44 +12,47 @@ export default function CheckoutResultPage() {
   const [status, setStatus] = useState(statusFromQuery || null);
 
   useEffect(() => {
-    if (!orderCode) return;
+    if (!orderCode || statusFromQuery) return; // đã có status thì không cần fetch
 
     let interval;
-    let timeout;
+    let redirectTimeout;
 
     const fetchStatus = async () => {
       try {
-        const res = await axios.get(
-          `/api/check-order-status?orderCode=${orderCode}`
-        );
-        setStatus(res.data.status);
+        const res = await axios.get(`/api/check-order-status?orderCode=${orderCode}`);
+        const currentStatus = res.data.status;
+        setStatus(currentStatus);
 
-        if (res.data.status === "success") {
-          
-          const pending = JSON.parse(
-            sessionStorage.getItem("pendingPurchase") || "{}"
-          );
-          timeout = setTimeout(() => {
+        if (currentStatus === "success") {
+          clearInterval(interval); // dừng polling
+          const pending = JSON.parse(sessionStorage.getItem("pendingPurchase") || "{}");
+          redirectTimeout = setTimeout(() => {
             if (pending.slug && pending.hashId) {
               router.push(`/courses/${pending.slug}?id=${pending.hashId}`);
-              sessionStorage.removeItem("pendingPurchase"); 
             } else {
-              router.push("/"); 
+              router.push("/");
             }
+            sessionStorage.removeItem("pendingPurchase");
           }, 4000);
         }
+
+        if (currentStatus === "failed") {
+          clearInterval(interval); // dừng polling
+          redirectTimeout = setTimeout(() => router.push("/"), 4000);
+        }
       } catch (err) {
+        clearInterval(interval); // dừng polling nếu lỗi
         setStatus("failed");
-        timeout = setTimeout(() => router.push("/"), 4000);
+        redirectTimeout = setTimeout(() => router.push("/"), 4000);
       }
     };
 
-    if (!statusFromQuery) fetchStatus();
-    interval = setInterval(fetchStatus, 3000);
+    fetchStatus(); // gọi lần đầu ngay
+    interval = setInterval(fetchStatus, 3000); // tiếp tục polling nếu chưa success/failed
 
     return () => {
       clearInterval(interval);
-      clearTimeout(timeout);
+      clearTimeout(redirectTimeout);
     };
   }, [orderCode, statusFromQuery, router]);
 

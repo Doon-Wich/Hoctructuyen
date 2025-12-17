@@ -12,12 +12,14 @@ class Document extends Model
     protected $table = 'documents';
 
     protected $fillable = [
+        'course_id',
+        'module_id',
         'lesson_id',
+        'title',
         'file_path',
         'original_name',
         'file_type',
         'status',
-        'processed_at',
     ];
 
     protected $casts = [

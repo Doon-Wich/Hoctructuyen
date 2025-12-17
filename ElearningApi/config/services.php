@@ -38,5 +38,8 @@ return [
         'key' => env('YOUTUBE_API_KEY'),
     ],
 
-
+    'qdrant' => [
+        'url' => env('QDRANT_URL'),
+        'collection' => env('QDRANT_COLLECTION', 'course_documents'),
+    ],
 ];
