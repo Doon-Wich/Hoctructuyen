@@ -19,6 +19,7 @@ class Assignment extends Model
         'description',
         'attachment',
         'deadline',
+        'is_programming'
     ];
 
     // Một bài tập thuộc về 1 lesson

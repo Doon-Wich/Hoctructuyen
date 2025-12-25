@@ -13,24 +13,25 @@ import {
   Popconfirm,
   message,
 } from "antd";
+import "@ant-design/v5-patch-for-react-19";
 import axios from "@/utils/axios";
 
 export default function QuestionManagerPage() {
-  const [mounted, setMounted] = useState(false); // ✅ để fix SSR mismatch
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editingQuestionId, setEditingQuestionId] = useState(null);
   const [correctAnswer, setCorrectAnswer] = useState(null);
-  const [form] = Form.useForm(); // ✅ instance
-  const params = useParams(); // App Router hook
+  const [form] = Form.useForm();
+  const params = useParams();
   const quizId = params.quizId;
 
   useEffect(() => {
-    setMounted(true);
-    if (quizId) fetchQuestions(); // ✅ chỉ fetch khi quizId có
+    if (quizId) fetchQuestions();
   }, [quizId]);
+
+  if (!quizId) return null;
 
   const fetchQuestions = async () => {
     setLoading(true);
@@ -45,6 +46,11 @@ export default function QuestionManagerPage() {
   };
 
   const handleSubmit = async (values) => {
+    if (correctAnswer === null) {
+      message.error("Vui lòng chọn đáp án đúng");
+      return;
+    }
+
     try {
       const answers = values.answers.map((item, index) => ({
         answer_text: item,
@@ -52,14 +58,12 @@ export default function QuestionManagerPage() {
       }));
 
       if (isEditing) {
-        // Sửa câu hỏi
         await axios.put(`/api/questions/${editingQuestionId}/update`, {
           question_title: values.question_title,
           answers,
         });
         message.success("Cập nhật câu hỏi thành công!");
       } else {
-        // Thêm câu hỏi
         await axios.post(`/api/quiz/${quizId}/questions`, {
           question_title: values.question_title,
           answers,
@@ -70,8 +74,8 @@ export default function QuestionManagerPage() {
       setIsModalOpen(false);
       form.resetFields();
       setCorrectAnswer(null);
-      setIsEditing(false); // ✅ reset trạng thái
-      setEditingQuestionId(null); // ✅ reset id
+      setIsEditing(false);
+      setEditingQuestionId(null);
       fetchQuestions();
     } catch (e) {
       message.error("Lỗi khi lưu câu hỏi");
@@ -123,7 +127,7 @@ export default function QuestionManagerPage() {
                 (a) => a.is_correct
               );
               setCorrectAnswer(correctIdx);
-              setIsEditing(true); // ✅ bật chế độ sửa
+              setIsEditing(true);
               setEditingQuestionId(record.id);
               setIsModalOpen(true);
             }}
@@ -143,19 +147,6 @@ export default function QuestionManagerPage() {
     },
   ];
 
-  const isSaveDisabled = () => {
-    const values = form.getFieldsValue();
-    return (
-      !values.question_title ||
-      !values.answers ||
-      !Array.isArray(values.answers) ||
-      values.answers.some((a) => !a) ||
-      correctAnswer === null
-    );
-  };
-
-  if (!mounted || !quizId) return null;
-
   return (
     <div style={{ padding: 24 }}>
       <h1 style={{ fontSize: 24, marginBottom: 16 }}>
@@ -168,7 +159,7 @@ export default function QuestionManagerPage() {
         onClick={() => {
           form.resetFields();
           setCorrectAnswer(null);
-          setIsEditing(false); // ✅ Thêm dòng này
+          setIsEditing(false);
           setEditingQuestionId(null);
           setIsModalOpen(true);
         }}
@@ -177,7 +168,7 @@ export default function QuestionManagerPage() {
       </Button>
 
       <Table
-        dataSource={Array.isArray(questions) ? questions : []} // ✅ luôn array
+        dataSource={Array.isArray(questions) ? questions : []}
         columns={columns}
         rowKey="id"
         loading={loading}
@@ -193,52 +184,66 @@ export default function QuestionManagerPage() {
           setCorrectAnswer(null);
         }}
         onOk={() => form.submit()}
-        okButtonProps={{ disabled: isSaveDisabled() }}
         okText={isEditing ? "Cập nhật" : "Lưu"}
         cancelText="Hủy"
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
+        <Form
+          form={form}
+          preserve={false}
+          layout="vertical"
+          onFinish={handleSubmit}
+        >
           <Form.Item
             name="question_title"
             label="Nội dung câu hỏi"
             rules={[{ required: true, message: "Nhập nội dung câu hỏi" }]}
           >
-            <Input.TextArea rows={2} placeholder="Nhập nội dung câu hỏi" />
+            <Input.TextArea rows={2} />
           </Form.Item>
 
           <Form.Item label="Các đáp án (ít nhất 4)">
+            <Form.Item
+              validateStatus={correctAnswer === null ? "error" : ""}
+              help={correctAnswer === null ? "Vui lòng chọn đáp án đúng" : ""}
+              style={{ marginBottom: 8 }}
+            />
+
             <Form.List name="answers" initialValue={["", "", "", ""]}>
               {(fields) => (
                 <>
-                  {fields.map((field, index) => (
-                    <div
-                      key={field.key}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        marginBottom: 10,
-                      }}
-                    >
-                      <Radio
-                        checked={correctAnswer === index}
-                        onChange={() => setCorrectAnswer(index)}
-                      />
-                      <Form.Item
-                        {...field}
-                        key={field.key}
-                        style={{ flex: 1, marginBottom: 0 }}
-                        rules={[
-                          {
-                            required: true,
-                            message: "Không để trống đáp án",
-                          },
-                        ]}
+                  {fields.map((field, index) => {
+                    const { key, ...restField } = field;
+
+                    return (
+                      <div
+                        key={key}
+                        style={{
+                          display: "flex",
+                          gap: 10,
+                          marginBottom: 10,
+                          alignItems: "center",
+                        }}
                       >
-                        <Input placeholder={`Đáp án ${index + 1}`} />
-                      </Form.Item>
-                    </div>
-                  ))}
+                        <Radio
+                          checked={correctAnswer === index}
+                          onChange={() => setCorrectAnswer(index)}
+                        />
+
+                        <Form.Item
+                          {...restField}
+                          style={{ flex: 1, marginBottom: 0 }}
+                          rules={[
+                            {
+                              required: true,
+                              message: "Không để trống đáp án",
+                            },
+                          ]}
+                        >
+                          <Input placeholder={`Đáp án ${index + 1}`} />
+                        </Form.Item>
+                      </div>
+                    );
+                  })}
                 </>
               )}
             </Form.List>

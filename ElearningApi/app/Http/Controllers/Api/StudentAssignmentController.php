@@ -19,7 +19,7 @@ class StudentAssignmentController extends BaseResourceController
     {
         return [
             'assignment_id' => 'required|exists:assignments,id',
-            'file_upload' => 'nullable|string', // nhận URL hoặc path
+            'file_upload' => 'nullable|string',
             'content' => 'nullable|string',
         ];
     }
@@ -28,14 +28,12 @@ class StudentAssignmentController extends BaseResourceController
     {
         $query = Assignment::with('lesson')->orderBy('id', 'desc');
 
-        // Nếu truyền lesson_id, lọc theo lesson
         if ($request->has('lesson_id')) {
             $query->where('lesson_id', $request->query('lesson_id'));
         }
 
         $data = $query->get();
 
-        // Trả về chuẩn data
         return $this->statusResponse(200, 200, 'Thành công', ['data' => $data]);
     }
 

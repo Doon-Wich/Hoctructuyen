@@ -68,7 +68,7 @@ export default function LessonManager({ moduleId, courseId }) {
       }
 
       // Upload file
-      if (fileList.length > 0) {
+      if (fileList.length > 0 && fileList[0].originFileObj) {
         const formData = new FormData();
         formData.append("course_id", courseId);
         formData.append("file", fileList[0].originFileObj);
@@ -102,6 +102,15 @@ export default function LessonManager({ moduleId, courseId }) {
     fetchLessons();
   };
 
+  const fetchDocumentByLesson = async (lessonId) => {
+    try {
+      const res = await axios.get(`/api/documents/by-lesson/${lessonId}`);
+      return res.data?.data || null;
+    } catch {
+      return null;
+    }
+  };
+
   const columns = [
     { title: "Tên bài học", dataIndex: "name", key: "name" },
     { title: "Video URL", dataIndex: "video_url", key: "video_url" },
@@ -113,9 +122,30 @@ export default function LessonManager({ moduleId, courseId }) {
         <Space>
           <Button
             type="link"
-            onClick={() => {
+            onClick={async () => {
               setEditingLesson(record);
               form.setFieldsValue(record);
+
+              const doc = await fetchDocumentByLesson(record.id);
+
+              if (doc) {
+                setFileList([
+                  {
+                    uid: doc.id,
+                    name: doc.original_name,
+                    status: "done",
+                    url: `/storage/${doc.file_path}`,
+                  },
+                ]);
+
+                form.setFieldsValue({
+                  title: doc.title,
+                });
+              } else {
+                setFileList([]);
+                form.setFieldsValue({ title: "" });
+              }
+
               setIsModalOpen(true);
             }}
           >

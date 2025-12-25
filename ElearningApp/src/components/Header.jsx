@@ -4,8 +4,37 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import axios from "@/utils/axios";
 import { useRouter } from "next/navigation";
+import { Dropdown, Badge } from "antd";
+import { BellOutlined } from "@ant-design/icons";
+import Notifications from "@/components/Notifications";
 
 export default function Header() {
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const res = await axios.get("/api/notifications");
+        const unread = res.data.data.filter((n) => !n.read_status).length;
+        setUnreadCount(unread);
+      } catch (err) {
+        console.error(err);
+        message.error("Không thể tải thông báo");
+      }
+    };
+
+    fetchUnread();
+  }, []);
+
+  const notificationsMenu = {
+    items: [
+      {
+        key: "notifications",
+        label: <Notifications onUnreadCountChange={setUnreadCount} />,
+      },
+    ],
+  };
+
   useEffect(() => {
     const mobileNavToggleBtn = document.querySelector(".mobile-nav-toggle");
 
@@ -55,87 +84,36 @@ export default function Header() {
         </Link>
 
         <nav id="navmenu" className="navmenu">
-          <ul>
-            {/* <li>
-              <a href="index.html" className="active">
-                Home
-                <br />
-              </a>
-            </li>
-            <li>
-              <a href="about.html">About</a>
-            </li>
-            <li>
-              <a href="courses.html">Courses</a>
-            </li>
-            <li>
-              <a href="trainers.html">Trainers</a>
-            </li>
-            <li>
-              <a href="events.html">Events</a>
-            </li>
-            <li>
-              <a href="pricing.html">Pricing</a>
-            </li>
-            <li className="dropdown">
-              <a href="#">
-                <span>Dropdown</span>{" "}
-                <i className="bi bi-chevron-down toggle-dropdown"></i>
-              </a>
-              <ul>
-                <li>
-                  <a href="#">Dropdown 1</a>
-                </li>
-                <li className="dropdown">
-                  <a href="#">
-                    <span>Deep Dropdown</span>{" "}
-                    <i className="bi bi-chevron-down toggle-dropdown"></i>
-                  </a>
-                  <ul>
-                    <li>
-                      <a href="#">Deep Dropdown 1</a>
-                    </li>
-                    <li>
-                      <a href="#">Deep Dropdown 2</a>
-                    </li>
-                    <li>
-                      <a href="#">Deep Dropdown 3</a>
-                    </li>
-                    <li>
-                      <a href="#">Deep Dropdown 4</a>
-                    </li>
-                    <li>
-                      <a href="#">Deep Dropdown 5</a>
-                    </li>
-                  </ul>
-                </li>
-                <li>
-                  <a href="#">Dropdown 2</a>
-                </li>
-                <li>
-                  <a href="#">Dropdown 3</a>
-                </li>
-                <li>
-                  <a href="#">Dropdown 4</a>
-                </li>
-              </ul>
-            </li>
-            <li>
-              <a href="contact.html">Contact</a>
-            </li> */}
-          </ul>
+          <ul></ul>
           <i className="mobile-nav-toggle d-xl-none bi bi-list"></i>
         </nav>
 
-        {!isLoggedIn ? (
-          <Link className="btn-getstarted" href="/auth/login">
-            Đăng nhập
-          </Link>
-        ) : (
-          <div className="btn-getstarted cursor-pointer" onClick={handleLogouts}>
-            Đăng xuất
-          </div>
-        )}
+        <div className="d-flex align-items-center gap-3">
+          {isLoggedIn && (
+            <Dropdown
+              menu={notificationsMenu}
+              trigger={["click"]}
+              placement="bottomRight"
+            >
+              <Badge dot={unreadCount > 0}>
+                <BellOutlined style={{ fontSize: 24, cursor: "pointer" }} />
+              </Badge>
+            </Dropdown>
+          )}
+
+          {!isLoggedIn ? (
+            <Link className="btn-getstarted" href="/auth/login">
+              Đăng nhập
+            </Link>
+          ) : (
+            <div
+              className="btn-getstarted cursor-pointer"
+              onClick={handleLogouts}
+            >
+              Đăng xuất
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

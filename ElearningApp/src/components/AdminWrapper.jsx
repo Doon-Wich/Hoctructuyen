@@ -76,11 +76,11 @@ export default function AdminWrapper({ children }) {
               icon: <FileProtectOutlined />,
               label: <Link href="/admin/quiz">Bài kiểm tra</Link>,
             },
-            {
-              key: "8",
-              icon: <BookTwoTone />,
-              label: <Link href="/admin/documents">Tài liệu</Link>,
-            },
+            // {
+            //   key: "8",
+            //   icon: <BookTwoTone />,
+            //   label: <Link href="/admin/documents">Tài liệu</Link>,
+            // },
             {
               key: "9",
               icon: <SettingOutlined />,

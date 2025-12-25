@@ -22,28 +22,13 @@ class ChatController extends Controller
     ) {
         $question = trim($request->input('question'));
         $lessonId = $request->input('lessonId');
-        
-        if (preg_match('/^(xin chào|chào|hello|hi)$/iu', $question)) {
-            $answer = "Chào bạn. Mình có thể giúp bạn giải đáp nội dung bài học này. Bạn cứ hỏi nhé!";
-
-            event(new ChatMessageSent([
-                'question' => $question,
-                'answer'   => $answer,
-            ]));
-
-            return response()->json([
-                'question' => $question,
-                'answer'   => $answer,
-            ]);
-        }
-
 
         $queryVector = $embedding->embed($question);
 
         $results = $qdrant->search(
             'course_documents',
             $queryVector,
-            5,
+            3,
             [
                 'must' => [[
                     'key' => 'lesson_id',
@@ -54,35 +39,41 @@ class ChatController extends Controller
 
         $llmContext = collect($results)
             ->pluck('payload.text')
-            ->filter(fn($t) => mb_strlen(trim($t)) > 50)
             ->map(fn($t) => $this->cleanText($t))
-            ->unique()
-            ->take(3)
-            ->map(fn($t) => mb_substr($t, 0, 600))
+            ->filter(fn($t) => mb_strlen($t) > 120)
+            ->take(2)
+            ->map(function ($t) {
+                // lấy nguyên từ đầu, không cắt giữa chừng
+                $t = mb_substr($t, 0, 450);
+
+                // cắt gọn tại dấu kết câu cuối cùng
+                if (preg_match('/^(.+?[\.!\?])\s/su', $t, $m)) {
+                    return $m[1];
+                }
+
+                return $t;
+            })
             ->implode("\n\n");
 
-        if (empty($llmContext)) {
-            $answer = "Mình chưa tìm thấy nội dung phù hợp trong tài liệu cho câu hỏi này.";
+
+        if (mb_strlen($llmContext) < 150) {
+            $answer = "Mình chưa tìm thấy nội dung phù hợp trong bài học cho câu hỏi này.";
         } else {
             $prompt = $promptService->build($question, $llmContext);
+
+            $start = microtime(true);
             $answer = $ollama->chat($prompt);
+            $end = microtime(true);
+
+            Log::info('OLLAMA_TIME', [
+                'seconds' => round($end - $start, 2)
+            ]);
         }
-
-        $start = microtime(true);
-
-        $answer = $ollama->chat($prompt);
-        $afterLLM = microtime(true);
 
         event(new ChatMessageSent([
             'question' => $question,
-            'answer' => $answer
+            'answer'   => $answer
         ]));
-        $afterEvent = microtime(true);
-
-        Log::info('Chat Timing', [
-            'LLM_time_s' => round($afterLLM - $start, 3),
-            'Broadcast_time_s' => round($afterEvent - $afterLLM, 3),
-        ]);
 
         return response()->json([
             'question' => $question,

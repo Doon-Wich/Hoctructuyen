@@ -1,38 +1,42 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import echo from "@/utils/echo";
+import { getEcho } from "@/utils/echo";
 import axiosClient from "@/utils/axios";
 
 export default function ChatBox({ lessonId }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef(null);
+  const TYPING_ID = "ai-typing";
 
   useEffect(() => {
-    console.log("ChatBox mounted");
+    const echo = getEcho();
+    if (!echo) return;
 
     const channel = echo.channel("chat");
 
     const handler = (e) => {
-      console.log("EVENT RECEIVED:", e);
+      const answer = e?.answer || e?.message?.answer;
+      if (!answer) return;
 
-      setMessages((prev) =>
-        prev
-          .filter((m) => m.id !== "typing")
-          .concat({
-            id: Date.now(),
-            text: e.message.answer,
-            context: e.message.context,
+      setMessages((prev) => {
+        const withoutTyping = prev.filter((m) => m.id !== TYPING_ID);
+
+        return [
+          ...withoutTyping,
+          {
+            id: crypto.randomUUID(),
+            text: answer,
             sender: "ai",
-          })
-      );
+          },
+        ];
+      });
     };
 
     channel.listen("ChatMessageSent", handler);
 
     return () => {
-      console.log("ChatBox unmounted");
       channel.stopListening("ChatMessageSent", handler);
       echo.leave("chat");
     };
@@ -45,25 +49,20 @@ export default function ChatBox({ lessonId }) {
 
     setMessages((prev) => [
       ...prev,
-      { id: Date.now(), text: userText, sender: "user" },
+      { id: crypto.randomUUID(), text: userText, sender: "user" },
       {
-        id: "typing",
-        text: "Đang trả lời...",
+        id: TYPING_ID,
         sender: "ai",
-        loading: true,
+        type: "typing",
       },
     ]);
 
     setInput("");
 
-    try {
-      await axiosClient.post("/api/chat", {
-        question: userText,
-        lessonId: lessonId,
-      });
-    } catch (err) {
-      console.error("Chat error:", err);
-    }
+    await axiosClient.post("/api/chat", {
+      question: userText,
+      lessonId,
+    });
   };
 
   useEffect(() => {
@@ -105,7 +104,7 @@ export default function ChatBox({ lessonId }) {
                 lineHeight: "1.6",
               }}
             >
-              {m.loading ? (
+              {m.type === "typing" ? (
                 <div className="d-flex align-items-center px-2 py-1">
                   <div className="typing-dots">
                     <span></span>

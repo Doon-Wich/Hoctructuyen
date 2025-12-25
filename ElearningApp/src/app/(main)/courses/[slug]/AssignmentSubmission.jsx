@@ -13,6 +13,8 @@ export default function AssignmentSubmission({ lessonId }) {
   const [fileUrl, setFileUrl] = useState("");
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
+  const [aiFixedContent, setAiFixedContent] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     if (!lessonId) return;
@@ -103,7 +105,7 @@ export default function AssignmentSubmission({ lessonId }) {
   const isGraded = !!submission?.teacher_feedback;
 
   return (
-    <div className="mt-3 p-4 border rounded bg-light position-relative shadow-sm">
+    <div className="mt-3 p-4 pt-5 border rounded bg-light position-relative shadow-sm">
       <div
         className="position-absolute"
         style={{ top: 16, right: 16, textAlign: "right" }}
@@ -126,18 +128,60 @@ export default function AssignmentSubmission({ lessonId }) {
             </span>
           </div>
         )}
+        {submission.teacher_feedback && (
+          <button
+            className="btn btn-warning btn-sm mt-1 me-2 fw-bold shadow-sm px-3 py-2"
+            style={{
+              background: "linear-gradient(135deg, #ffc107, #ffb300)",
+              border: "none",
+              fontSize: "0.95rem",
+            }}
+            disabled={aiLoading || !content}
+            onClick={async () => {
+              try {
+                setAiLoading(true);
+                const res = await axios.post("/api/ai/fix-assignment", {
+                  title: assignment.title,
+                  description: assignment.description,
+                  content: content,
+                });
+
+                let aiContent = res.data?.data || "";
+
+                aiContent = aiContent.replace(/(.{70,}?)(\s|$)/g, "$1\n");
+
+                setAiFixedContent(aiContent);
+                message.success("Đã gợi ý xong");
+              } catch {
+                message.error("Gợi ý thất bại");
+              } finally {
+                setAiLoading(false);
+              }
+            }}
+          >
+            {aiLoading ? "Đang gợi ý..." : "Gợi ý"}
+          </button>
+        )}
       </div>
 
       <h5 className="mb-2">{assignment.title}</h5>
       <p className="mb-3">{assignment.description}</p>
 
-      <div style={{ display: "flex", gap: 16 }}>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      {submission?.teacher_feedback && (
+        <div className="alert alert-info py-2 px-3 mb-3">
+          <div className="fw-bold mb-1">Nhận xét của giáo viên:</div>
+          <div style={{ whiteSpace: "pre-wrap" }}>
+            {submission.teacher_feedback}
+          </div>
+        </div>
+      )}
+
+      <div className="row g-3">
+        <div className="col-md-6 d-flex flex-column">
           <label className="fw-bold">Bài làm học sinh:</label>
           <CodeEditor
             value={content}
             onChange={setContent}
-            readOnly={isGraded}
             style={{ flex: 1, minHeight: 300 }}
           />
           <div className="mt-2">
@@ -151,22 +195,26 @@ export default function AssignmentSubmission({ lessonId }) {
           </div>
         </div>
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-          <label className="fw-bold">Nhận xét giáo viên:</label>
-          <CodeEditor
-            value={submission?.teacher_feedback || ""}
-            readOnly
-            theme="tokyo"
-            style={{ flex: 1, minHeight: 300 }}
-          />
-        </div>
+        {aiFixedContent && (
+          <div className="col-md-6 d-flex flex-column">
+            <label className="fw-bold">Bài đã được sửa: </label>
+            <CodeEditor
+              value={aiFixedContent}
+              readOnly
+              theme="tokyo"
+              style={{
+                flex: 1,
+                minHeight: 300,
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {!isGraded && (
-        <button
-          onClick={handleSubmit}
-          className="btn btn-primary btn-sm mt-3"
-        >
+        <button onClick={handleSubmit} className="btn btn-primary btn-sm mt-3">
           {isSubmitted ? "Cập nhật bài nộp" : "Nộp bài"}
         </button>
       )}

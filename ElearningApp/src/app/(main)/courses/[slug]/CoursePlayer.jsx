@@ -46,6 +46,7 @@ export default function CoursePlayer({ slug, courseHash }) {
         }
 
         const allLessons = courseData.modules.flatMap((m) => m.lessons);
+
         const lessonsWithTracking = await Promise.all(
           allLessons.map(async (lesson) => {
             try {
@@ -65,6 +66,16 @@ export default function CoursePlayer({ slug, courseHash }) {
             m.lessons.some((x) => x.id === l.id)
           ),
         }));
+
+        const flat = updatedModules.flatMap((m) => m.lessons);
+
+        flat.forEach((lesson, idx) => {
+          if (idx === 0) {
+            lesson.is_locked = false;
+          } else {
+            lesson.is_locked = !flat[idx - 1]?.tracking?.is_completed;
+          }
+        });
 
         setCourse({ ...courseData, modules: updatedModules });
 
@@ -127,7 +138,7 @@ export default function CoursePlayer({ slug, courseHash }) {
           videoId,
           events: {
             onReady: (e) => {
-              if (tracking?.is_completed) {
+              if (tracking?.is_completed && tracking?.last_position == null) {
                 e.target.seekTo(0, true);
                 maxPlayed = 0;
               } else if (tracking?.last_position) {
@@ -145,16 +156,59 @@ export default function CoursePlayer({ slug, courseHash }) {
 
                 intervalId = setInterval(async () => {
                   if (!playerInstance?.getCurrentTime) return;
+
                   const current = playerInstance.getCurrentTime();
 
                   if (current > maxPlayed + 5) {
                     maxPlayed = current;
+
                     try {
-                      await axios.post("/api/lesson-tracking/update", {
-                        lesson_id: currentLesson.id,
-                        last_position: Math.floor(current),
-                        duration: Math.floor(duration),
-                      });
+                      const res = await axios.post(
+                        "/api/lesson-tracking/update",
+                        {
+                          lesson_id: currentLesson.id,
+                          last_position: Math.floor(current),
+                          duration: Math.floor(duration),
+                        }
+                      );
+
+                      const isCompleted =
+                        res.data?.is_completed === true ||
+                        res.data?.data?.is_completed === true;
+
+                      if (isCompleted && !tracking?.is_completed) {
+                        setTracking((prev) => ({
+                          ...(prev || {}),
+                          ...(res.data?.data || res.data),
+                          is_completed: true,
+                        }));
+
+                        setCourse((prev) => {
+                          if (!prev) return prev;
+
+                          const cloned = JSON.parse(JSON.stringify(prev));
+
+                          const flatLessons = cloned.modules.flatMap(
+                            (m) => m.lessons
+                          );
+                          const index = flatLessons.findIndex(
+                            (l) => l.id === currentLesson.id
+                          );
+
+                          if (index !== -1) {
+                            flatLessons[index].tracking = {
+                              ...(flatLessons[index].tracking || {}),
+                              is_completed: true,
+                            };
+
+                            if (flatLessons[index + 1]) {
+                              flatLessons[index + 1].is_locked = false;
+                            }
+                          }
+
+                          return cloned;
+                        });
+                      }
                     } catch (err) {
                       console.error("Không thể cập nhật tiến trình:", err);
                     }
@@ -179,31 +233,35 @@ export default function CoursePlayer({ slug, courseHash }) {
                       }
                     );
 
-                    setTracking({
-                      ...tracking,
-                      is_completed: res.data.is_completed,
-                      last_position: duration,
-                    });
+                    const isCompleted =
+                      res.data.is_completed === true ||
+                      res.data.data?.is_completed === true;
 
-                    if (res.data.is_completed) {
-                      const allLessons = course.modules.flatMap(
-                        (m) => m.lessons
-                      );
-                      const index = allLessons.findIndex(
-                        (l) => l.id === currentLesson.id
-                      );
-                      if (index >= 0 && index < allLessons.length - 1) {
-                        const nextLesson = allLessons[index + 1];
-                        const updatedModules = course.modules.map((m) => ({
-                          ...m,
-                          lessons: m.lessons.map((l) =>
-                            l.id === nextLesson.id
-                              ? { ...l, is_locked: false }
-                              : l
-                          ),
-                        }));
-                        setCourse({ ...course, modules: updatedModules });
-                      }
+                    setTracking((prev) => ({
+                      ...prev,
+                      is_completed: isCompleted,
+                      last_position: duration,
+                    }));
+
+                    if (isCompleted) {
+                      setCourse((prev) => {
+                        if (!prev) return null;
+
+                        const cloned = JSON.parse(JSON.stringify(prev));
+
+                        cloned.modules.forEach((m) => {
+                          m.lessons.forEach((l) => {
+                            if (l.id === currentLesson.id) {
+                              l.tracking = {
+                                ...(l.tracking || {}),
+                                is_completed: true,
+                              };
+                            }
+                          });
+                        });
+
+                        return cloned;
+                      });
                     }
                   } catch (err) {
                     console.error("Không thể cập nhật hoàn tất:", err);
@@ -229,28 +287,26 @@ export default function CoursePlayer({ slug, courseHash }) {
       const playerEl = document.getElementById("youtube-player");
       if (playerEl) playerEl.innerHTML = "";
     };
-  }, [currentLesson, tracking]);
+  }, [currentLesson?.id]);
 
   useEffect(() => {
-    const allLessons = course?.modules?.flatMap((m) => m.lessons) || [];
-    console.log(tracking);
-    const doneCount = allLessons.filter(
-      (l) =>
-        l.tracking?.is_completed ||
-        (l.id === currentLesson?.id && tracking?.is_completed)
-    ).length;
-    if (allLessons.length > 0 && doneCount === allLessons.length) {
-      if (canTakeQuiz) {
-        setShowQuizModal(true);
-      }
+    if (!course) return;
+
+    const allLessons = course.modules.flatMap((m) => m.lessons);
+
+    const doneCount = allLessons.filter((l) => l.tracking?.is_completed).length;
+
+    const total = allLessons.length;
+
+    setTotalLessons(total);
+    setLearnedLessons(doneCount);
+    setPercent(total > 0 ? Math.round((doneCount / total) * 100) : 0);
+
+    if (total > 0 && doneCount === total && canTakeQuiz) {
+      setShowQuizModal(true);
       setCanTakeQuiz(false);
     }
-    setTotalLessons(allLessons.length);
-    setLearnedLessons(doneCount);
-    setPercent(
-      totalLessons > 0 ? Math.round((doneCount / totalLessons) * 100) : 0
-    );
-  }, [course, tracking, currentLesson]);
+  }, [course]);
 
   if (loading)
     return (
@@ -372,7 +428,10 @@ export default function CoursePlayer({ slug, courseHash }) {
 
           <h4 className="mt-3">{currentLesson?.name}</h4>
 
-          <AssignmentSubmission key={currentLesson?.id} lessonId={currentLesson?.id} />
+          <AssignmentSubmission
+            key={currentLesson?.id}
+            lessonId={currentLesson?.id}
+          />
         </div>
 
         <div
@@ -468,7 +527,7 @@ export default function CoursePlayer({ slug, courseHash }) {
         <div
           style={{
             position: "fixed",
-            bottom: 80, // cách icon một khoảng
+            bottom: 80, 
             right: 24,
             zIndex: 1100,
           }}
@@ -476,8 +535,7 @@ export default function CoursePlayer({ slug, courseHash }) {
           <ChatBox lessonId={1} />
         </div>
       )}
-
-      {/* Nút chat nổi */}
+      
       <Button
         type="primary"
         shape="circle"

@@ -15,10 +15,12 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Api\SanctumController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\LessonTrackingController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\QuizAttemptController;
 use App\Http\Controllers\Api\QuizController;
 use App\Http\Controllers\Api\StudentAssignmentController;
 use App\Http\Controllers\Api\TeacherAssignmentController;
+use App\Http\Controllers\Api\AISolveController;
 use App\Http\Middleware\CheckTokenExpiration;
 use App\Models\Role;
 
@@ -57,6 +59,9 @@ Route::middleware(['auth:sanctum', CheckTokenExpiration::class])->group(function
     //Vai trò
     Route::resource('roles', RoleController::class);
 
+    //Chatbot
+    Route::post('/chat', [ChatController::class, 'chat']);
+
     //Mua khoá học
     Route::post('/purchase-course', [PaymentController::class, 'purchaseCourse']);
     Route::get('/check-order-status', [PaymentController::class, 'checkOrderStatus']);
@@ -85,10 +90,16 @@ Route::middleware(['auth:sanctum', CheckTokenExpiration::class])->group(function
     Route::post('/quiz/{quizId}/submit', [QuizAttemptController::class, 'submit']);
     Route::get('/quiz/{quiz}/attempt', [QuizAttemptController::class, 'getAttempt']);
 
+    //Notification
+    Route::get('/notifications/unread', [NotificationController::class, 'unread']);
+    Route::resource('/notifications', NotificationController::class);
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+    Route::post('/notifications/mark-read/{id}', [NotificationController::class, 'markAsRead']);
 
-
-    //Chatbot
-    Route::post('/chat', [ChatController::class, 'chat']);
-});
     //Upload tài liệu
     Route::post('/documents', [DocumentController::class, 'store']);
+    Route::get('/documents/by-lesson/{lessonId}', [DocumentController::class, 'getByLesson']);
+
+    //AI giải bài tập
+    Route::post('/ai/fix-assignment', [AISolveController::class, 'fixAssignment']);
+});

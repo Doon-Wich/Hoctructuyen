@@ -44,11 +44,22 @@ export default function AssignmentManagerPage() {
   const fetchCourses = async () => {
     try {
       const res = await axios.get("/api/courses");
-      const data = Array.isArray(res.data.data) ? res.data.data : res.data || [];
+      const data = Array.isArray(res.data.data)
+        ? res.data.data
+        : res.data || [];
       setCourses(data);
     } catch (error) {
       console.error(error);
       message.error("Không thể tải danh sách khoá học");
+    }
+  };
+
+  const fetchModuleDetail = async (moduleId) => {
+    try {
+      const res = await axios.get(`/api/module/${moduleId}`);
+      return res.data?.data;
+    } catch {
+      return null;
     }
   };
 
@@ -57,33 +68,72 @@ export default function AssignmentManagerPage() {
     fetchCourses();
   }, []);
 
-  const loadModules = (courseId) => {
+  useEffect(() => {
+    if (!editingAssignment || courses.length === 0) return;
+
+    const initEditForm = async () => {
+      const moduleId = editingAssignment.lesson?.module_id;
+      let courseId = null;
+
+      if (moduleId) {
+        const module = await fetchModuleDetail(moduleId);
+        courseId = module?.course_id;
+      }
+
+      if (!courseId) return;
+
+      // set khoá học trước
+      form.setFieldsValue({ course_id: courseId });
+
+      await loadModules(courseId);
+      await loadLessons(moduleId);
+
+      form.setFieldsValue({
+        module_id: moduleId,
+        lesson_id: editingAssignment.lesson_id,
+        title: editingAssignment.title,
+        description: editingAssignment.description,
+        attachment: editingAssignment.attachment,
+        deadline: editingAssignment.deadline
+          ? dayjs(editingAssignment.deadline)
+          : null,
+      });
+    };
+
+    initEditForm();
+  }, [editingAssignment, courses]);
+
+  const loadModules = async (courseId) => {
     form.setFieldsValue({ module_id: null, lesson_id: null });
     setModules([]);
     setLessons([]);
-    if (!courseId) return;
+    if (!courseId) return [];
 
-    axios
-      .get(`/api/modules?course_id=${courseId}`)
-      .then((res) => {
-        const data = Array.isArray(res?.data?.data) ? res.data.data : [];
-        setModules(data);
-      })
-      .catch(() => message.error("Không tải được danh sách chương"));
+    try {
+      const res = await axios.get(`/api/module?course_id=${courseId}`);
+      const data = Array.isArray(res?.data?.data) ? res.data.data : [];
+      setModules(data);
+      return data;
+    } catch {
+      message.error("Không tải được danh sách chương");
+      return [];
+    }
   };
 
-  const loadLessons = (moduleId) => {
+  const loadLessons = async (moduleId) => {
     form.setFieldsValue({ lesson_id: null });
     setLessons([]);
-    if (!moduleId) return;
+    if (!moduleId) return [];
 
-    axios
-      .get(`/api/lessons?module_id=${moduleId}`)
-      .then((res) => {
-        const data = Array.isArray(res?.data?.data) ? res.data.data : [];
-        setLessons(data);
-      })
-      .catch(() => message.error("Không tải được danh sách bài học"));
+    try {
+      const res = await axios.get(`/api/lessons?module_id=${moduleId}`);
+      const data = Array.isArray(res?.data?.data) ? res.data.data : [];
+      setLessons(data);
+      return data;
+    } catch {
+      message.error("Không tải được danh sách bài học");
+      return [];
+    }
   };
 
   const handleSubmit = async () => {
@@ -143,20 +193,6 @@ export default function AssignmentManagerPage() {
             type="link"
             onClick={() => {
               setEditingAssignment(record);
-              form.setFieldsValue({
-                ...record,
-                course_id: record.lesson?.module?.course_id,
-                module_id: record.lesson?.module_id,
-                lesson_id: record.lesson_id,
-                deadline: record.deadline ? dayjs(record.deadline) : null,
-                attachment: record.attachment,
-              });
-              if (record.lesson?.module?.course_id) {
-                loadModules(record.lesson.module.course_id);
-              }
-              if (record.lesson?.module_id) {
-                loadLessons(record.lesson.module_id);
-              }
               setIsModalOpen(true);
             }}
           >
@@ -260,7 +296,11 @@ export default function AssignmentManagerPage() {
             <Input.TextArea placeholder="Mô tả bài tập" />
           </Form.Item>
 
-          <Form.Item name="attachment" label="File đính kèm" valuePropName="file">
+          <Form.Item
+            name="attachment"
+            label="File đính kèm"
+            valuePropName="file"
+          >
             <FileUpload
               onChange={(url) => form.setFieldValue("attachment", url)}
               initialValue={editingAssignment?.attachment}

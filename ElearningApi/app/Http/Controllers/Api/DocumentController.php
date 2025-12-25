@@ -37,4 +37,11 @@ class DocumentController extends Controller
             'document' => $document
         ]);
     }
+
+    public function getByLesson($lessonId)
+    {
+        return response()->json([
+            'data' => Document::where('lesson_id', $lessonId)->first()
+        ]);
+    }
 }

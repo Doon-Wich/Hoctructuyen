@@ -60,6 +60,7 @@
 /*--------------------------------------------------------------
 # General Styling & Shared Classes
 --------------------------------------------------------------*/
+
 body {
   color: var(--default-color);
   background-color: var(--background-color);
