@@ -86,8 +86,8 @@ export default function AssignmentManagerPage() {
         `/api/assignments/submissions/${gradingSubmission.id}/grade`,
         {
           score: Number(values.score),
-          teacher_feedback: values.teacher_feedback, 
-          content: codeContent, 
+          teacher_feedback: values.teacher_feedback,
+          content: codeContent,
         }
       );
 
@@ -146,7 +146,6 @@ export default function AssignmentManagerPage() {
     },
     {
       title: "Nội dung",
-      dataIndex: "content",
       key: "content",
       render: (_, record) => (
         <Button type="link" onClick={() => openGradingModal(record)}>
@@ -174,6 +173,7 @@ export default function AssignmentManagerPage() {
         pagination={{ pageSize: 5 }}
       />
 
+      {/* Modal danh sách bài nộp */}
       <Modal
         title={`Bài nộp: ${selectedAssignment?.title}`}
         open={!!selectedAssignment}
@@ -181,6 +181,10 @@ export default function AssignmentManagerPage() {
         footer={null}
         width={900}
       >
+        <p style={{ marginBottom: 12, color: "#666" }}>
+          Danh sách các bài làm mà học sinh đã nộp cho bài tập này
+        </p>
+
         <Table
           dataSource={submissions}
           columns={submissionColumns}
@@ -189,6 +193,7 @@ export default function AssignmentManagerPage() {
         />
       </Modal>
 
+      {/* Modal chấm điểm */}
       <Modal
         title={`Chấm điểm: ${gradingSubmission?.student.name}`}
         open={gradingModalOpen}
@@ -202,6 +207,9 @@ export default function AssignmentManagerPage() {
         <div style={{ display: "flex", gap: 24, flex: 1, minHeight: 0 }}>
           <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
             <h5>Bài làm học sinh</h5>
+            <p style={{ marginBottom: 8, color: "#666", fontSize: 12 }}>
+              Nội dung bài làm mà học sinh đã nộp
+            </p>
             <CodeEditor
               value={codeContent}
               readOnly
@@ -212,29 +220,29 @@ export default function AssignmentManagerPage() {
 
           <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
             <h5>Chấm điểm & Nhận xét</h5>
+            <p style={{ marginBottom: 8, color: "#666", fontSize: 12 }}>
+              Giáo viên nhập nhận xét cho bài làm của học sinh
+            </p>
             <CodeEditor
               value={
                 gradingSubmission?.teacher_feedback ||
                 `/* Bài làm học sinh */\n${codeContent}\n\n/* Nhận xét giáo viên */\n`
               }
-              onChange={(val) => form.setFieldsValue({ teacher_feedback: val })}
+              onChange={(val) =>
+                form.setFieldsValue({ teacher_feedback: val })
+              }
               theme="tokyo"
               style={{ flex: 1, minHeight: 0 }}
             />
           </div>
         </div>
-        <div
-          style={{
-            marginTop: 16,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-start",
-          }}
-        >
+
+        <div style={{ marginTop: 16 }}>
           <Form form={form} layout="vertical" style={{ width: 250 }}>
             <Form.Item
               name="score"
               label="Điểm"
+              extra="Nhập điểm số cho bài làm (0 – 100)"
               rules={[{ required: true, message: "Nhập điểm" }]}
             >
               <InputNumber min={0} max={100} style={{ width: "100%" }} />
@@ -250,16 +258,14 @@ export default function AssignmentManagerPage() {
           style={{
             marginTop: 16,
             display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-end",
+            justifyContent: "flex-end",
+            gap: 8,
           }}
         >
-          <div style={{ display: "flex", gap: 8 }}>
-            <Button onClick={() => setGradingModalOpen(false)}>Hủy</Button>
-            <Button type="primary" onClick={handleGradingSubmit}>
-              Lưu
-            </Button>
-          </div>
+          <Button onClick={() => setGradingModalOpen(false)}>Hủy</Button>
+          <Button type="primary" onClick={handleGradingSubmit}>
+            Lưu
+          </Button>
         </div>
       </Modal>
     </div>
