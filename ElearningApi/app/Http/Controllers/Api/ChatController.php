@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Events\ChatMessageSent;
 use App\Http\Controllers\Controller;
 use App\Services\EmbeddingService;
-use App\Services\OllamaChatService;
+use App\Services\GroqChatService;
 use App\Services\QdrantService;
 use App\Services\RagPromptService;
 use Illuminate\Http\Request;
@@ -18,7 +18,7 @@ class ChatController extends Controller
         EmbeddingService $embedding,
         QdrantService $qdrant,
         RagPromptService $promptService,
-        OllamaChatService $ollama
+        GroqChatService $nroq
     ) {
         $question = trim($request->input('question'));
         $lessonId = $request->input('lessonId');
@@ -43,10 +43,8 @@ class ChatController extends Controller
             ->filter(fn($t) => mb_strlen($t) > 120)
             ->take(2)
             ->map(function ($t) {
-                // lấy nguyên từ đầu, không cắt giữa chừng
                 $t = mb_substr($t, 0, 450);
 
-                // cắt gọn tại dấu kết câu cuối cùng
                 if (preg_match('/^(.+?[\.!\?])\s/su', $t, $m)) {
                     return $m[1];
                 }
@@ -56,20 +54,14 @@ class ChatController extends Controller
             ->implode("\n\n");
 
 
-        if (mb_strlen($llmContext) < 150) {
+        $hasContext = !empty($results) && mb_strlen($llmContext) >= 50;
+
+        if (!$hasContext) {
             $answer = "Mình chưa tìm thấy nội dung phù hợp trong bài học cho câu hỏi này.";
         } else {
             $prompt = $promptService->build($question, $llmContext);
-
-            $start = microtime(true);
-            $answer = $ollama->chat($prompt);
-            $end = microtime(true);
-
-            Log::info('OLLAMA_TIME', [
-                'seconds' => round($end - $start, 2)
-            ]);
+            $answer = $nroq->chat($prompt);
         }
-
         event(new ChatMessageSent([
             'question' => $question,
             'answer'   => $answer
@@ -85,7 +77,6 @@ class ChatController extends Controller
     {
         $patterns = [
             '/Downloaded by.*?\n/i',
-            '/Studocu.*?\n/i',
             '/Scan to open.*?\n/i',
             '/lOMoARcPSD\|\d+/i',
         ];

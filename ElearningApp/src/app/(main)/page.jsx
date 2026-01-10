@@ -25,7 +25,7 @@ export default function Home() {
   const fetchCourses = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("/api/courses");
+      const res = await axios.get("/api/get-courses");
 
       let data = [];
       if (Array.isArray(res.data)) {

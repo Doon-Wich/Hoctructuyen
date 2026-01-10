@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { Layout, Menu } from "antd";
+import { Layout, Menu, Dropdown, Button } from "antd";
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -12,20 +11,55 @@ import {
   UnorderedListOutlined,
   HighlightOutlined,
   FormOutlined,
-  QuestionCircleOutlined,
   FileProtectOutlined,
-  BookTwoTone
 } from "@ant-design/icons";
 import "@ant-design/v5-patch-for-react-19";
 import Link from "next/link";
-import AssignmentManagerPage from "@/app/admin/assignments/page";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { LogoutOutlined } from "@ant-design/icons";
+import axios from "@/utils/axios";
 
 const { Header, Sider, Content, Footer } = Layout;
 
 export default function AdminWrapper({ children }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      router.push("/auth/login");
+    } else {
+      setIsLoggedIn(true);
+    }
+  }, []);
 
   const toggle = () => setCollapsed(!collapsed);
+
+  const handleLogouts = async () => {
+    try {
+      await axios.post("/api/logout");
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      setIsLoggedIn(false);
+      router.push("/auth/login");
+    }
+  };
+
+  const menuItems = [
+    {
+      key: "logout",
+      icon: <LogoutOutlined />,
+      label: "Đăng xuất",
+      onClick: handleLogouts,
+    },
+  ];
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -86,7 +120,6 @@ export default function AdminWrapper({ children }) {
               icon: <SettingOutlined />,
               label: <Link href="/admin/settings">Cài đặt</Link>,
             },
-            
           ]}
         />
       </Sider>
@@ -111,7 +144,11 @@ export default function AdminWrapper({ children }) {
               style={{ fontSize: 18, cursor: "pointer" }}
             />
           )}
-          <div style={{ marginLeft: "auto" }}>Admin</div>
+          <div style={{ marginLeft: "auto" }}>
+            <Dropdown menu={{ items: menuItems }} placement="bottomRight">
+              <Button type="text">Admin</Button>
+            </Dropdown>
+          </div>
         </Header>
         <Content style={{ margin: 16 }}>
           <div style={{ padding: 24, background: "#fff", minHeight: 360 }}>

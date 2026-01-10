@@ -28,13 +28,94 @@ use App\Models\Role;
 Route::post('/register', [SanctumController::class, 'register'])->name('api.register');
 Route::post('/login', [SanctumController::class, 'login'])->name('api.login');
 Route::post('/logout', [SanctumController::class, 'logout'])->middleware('auth:sanctum');
+Route::get('/get-courses', [CourseController::class, 'getCourse']);
 
-// VNPAY callback
-Route::get('/vnpay/callback', [PaymentController::class, 'vnpayCallback']);
+
 // Protected route — check token expiration
 Route::middleware(['auth:sanctum', CheckTokenExpiration::class])->get('/user', function (Request $request) {
     return response()->json($request->user());
 });
+
+// Route::middleware(['auth:sanctum', CheckTokenExpiration::class])->group(function () {
+
+//     Route::post('/upload-file', [FileUploadController::class, 'upload']);
+//     Route::get('/notifications/unread', [NotificationController::class, 'unread']);
+//     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead']);
+//     Route::resource('/notifications', NotificationController::class);
+// });
+
+// Route::middleware([
+//     'auth:sanctum',
+//     CheckTokenExpiration::class,
+//     'role:2'
+// ])->group(function () {
+
+//     // VNPAY callback
+//     Route::get('/vnpay/callback', [PaymentController::class, 'vnpayCallback']);
+
+//     Route::get('/user-purchased-courses', [CourseController::class, 'purchasedCourses']);
+
+//     //Chatbot
+//     Route::post('/chat', [ChatController::class, 'chat']);
+
+//     //Mua khoá học
+//     Route::post('/purchase-course', [PaymentController::class, 'purchaseCourse']);
+//     Route::get('/check-order-status', [PaymentController::class, 'checkOrderStatus']);
+
+//     // Theo dõi tiến độ
+//     Route::post('/lesson-tracking/update', [LessonTrackingController::class, 'updateProgress']);
+//     Route::get('/lesson-tracking/get/{lesson_id}', [LessonTrackingController::class, 'getTracking']);
+
+//     // Nộp bài
+//     Route::resource('/student-assignment-submissions', StudentAssignmentController::class);
+//     Route::post('/quiz/{quizId}/submit', [QuizAttemptController::class, 'submit']);
+//     Route::get('/quiz/{quiz}/attempt', [QuizAttemptController::class, 'getAttempt']);
+
+//     Route::get('/student-assignment-submissions/{id}/get', [StudentAssignmentController::class, 'getByAssignment']);
+
+//     // AI
+//     Route::post('/ai/fix-assignment', [AISolveController::class, 'fixAssignment']);
+// });
+
+// Route::middleware([
+//     'auth:sanctum',
+//     CheckTokenExpiration::class,
+//     'role:1'
+// ])->group(function () {
+
+//     // Khoá học – bài học – module
+//     Route::resource('courses', CourseController::class);
+//     Route::resource('module', ModuleController::class);
+//     Route::resource('lessons', LessonController::class);
+//     Route::get('get-lesson-by-module/{moduleId}', [LessonController::class, 'getByModule']);
+
+//     // Bài tập
+//     Route::resource('/assignments', AssignmentsController::class);
+//     Route::get('/assignments/submissions/{assignmentId}', [TeacherAssignmentController::class, 'submissions']);
+//     Route::post('/assignments/submissions/{submissionId}/grade', [TeacherAssignmentController::class, 'grade']);
+
+//     // Quiz
+//     Route::resource("/quiz", QuizController::class);
+//     Route::get('/quiz/{quizId}/get-questions', [QuizController::class, 'getQuestions']);
+//     Route::post('/quiz/{quizId}/questions', [QuizController::class, 'storeQuestion']);
+//     Route::put('/questions/{questionId}/update', [QuizController::class, 'updateQuestion']);
+//     Route::delete('/questions/{id}/delete', [QuizController::class, 'deleteQuestion']);
+
+//     //Upload tài liệu
+//     Route::post('/documents', [DocumentController::class, 'store']);
+//     Route::get('/documents/by-lesson/{lessonId}', [DocumentController::class, 'getByLesson']);
+// });
+
+// Route::middleware([
+//     'auth:sanctum',
+//     CheckTokenExpiration::class,
+//     'role:3'
+// ])->group(function () {
+
+//     Route::resource('users', UserController::class);
+//     Route::resource('roles', RoleController::class);
+//     Route::resource('categories', CategoryController::class);
+// });
 
 Route::middleware(['auth:sanctum', CheckTokenExpiration::class])->group(function () {
     // Upload

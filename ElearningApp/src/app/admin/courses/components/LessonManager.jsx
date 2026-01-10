@@ -48,12 +48,42 @@ export default function LessonManager({ moduleId, courseId }) {
     if (moduleId) fetchLessons();
   }, [moduleId]);
 
+  useEffect(() => {
+    if (!isModalOpen) return;
+
+    if (editingLesson) {
+      form.setFieldsValue(editingLesson);
+
+      (async () => {
+        const doc = await fetchDocumentByLesson(editingLesson.id);
+
+        if (doc) {
+          setFileList([
+            {
+              uid: doc.id,
+              name: doc.original_name,
+              status: "done",
+              url: `/storage/${doc.file_path}`,
+            },
+          ]);
+
+          form.setFieldsValue({ title: doc.title });
+        } else {
+          setFileList([]);
+          form.setFieldsValue({ title: "" });
+        }
+      })();
+    } else {
+      form.resetFields();
+      setFileList([]);
+    }
+  }, [isModalOpen, editingLesson]);
+
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       let lessonId = editingLesson?.id;
 
-      // Thêm hoặc sửa lesson
       if (editingLesson) {
         await axios.put(`/api/lessons/${lessonId}`, {
           ...values,
@@ -67,7 +97,6 @@ export default function LessonManager({ moduleId, courseId }) {
         lessonId = res.data.id;
       }
 
-      // Upload file
       if (fileList.length > 0 && fileList[0].originFileObj) {
         const formData = new FormData();
         formData.append("course_id", courseId);
@@ -124,28 +153,6 @@ export default function LessonManager({ moduleId, courseId }) {
             type="link"
             onClick={async () => {
               setEditingLesson(record);
-              form.setFieldsValue(record);
-
-              const doc = await fetchDocumentByLesson(record.id);
-
-              if (doc) {
-                setFileList([
-                  {
-                    uid: doc.id,
-                    name: doc.original_name,
-                    status: "done",
-                    url: `/storage/${doc.file_path}`,
-                  },
-                ]);
-
-                form.setFieldsValue({
-                  title: doc.title,
-                });
-              } else {
-                setFileList([]);
-                form.setFieldsValue({ title: "" });
-              }
-
               setIsModalOpen(true);
             }}
           >
@@ -236,7 +243,7 @@ export default function LessonManager({ moduleId, courseId }) {
             getValueFromEvent={(e) => (Array.isArray(e) ? e : e?.fileList)}
           >
             <Upload.Dragger
-              beforeUpload={() => false} // ngăn auto upload
+              beforeUpload={() => false}
               maxCount={1}
               fileList={fileList}
               onChange={({ fileList }) => setFileList(fileList)}

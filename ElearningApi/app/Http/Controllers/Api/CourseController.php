@@ -25,6 +25,15 @@ class CourseController extends BaseResourceController
         return parent::statusResponse(200, 200, '', $data);
     }
 
+    public function getCourse(Request $request)
+    {
+        $data = $this->model::with($this->with)
+            ->orderBy('id', 'desc')
+            ->get();
+
+        return parent::statusResponse(200, 200, '', $data);
+    }
+
     protected function getStoreValidationRules()
     {
         return [

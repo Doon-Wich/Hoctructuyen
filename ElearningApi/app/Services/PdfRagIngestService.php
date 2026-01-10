@@ -55,17 +55,14 @@ class PdfRagIngestService
 
     private function cleanText(string $text): string
     {
-        // bỏ rác PDF phổ biến
         $patterns = [
             '/Downloaded by.*?\n/i',
-            '/Studocu.*?\n/i',
             '/Scan to open.*?\n/i',
             '/lOMoARcPSD\|\d+/i',
         ];
 
         $text = preg_replace($patterns, '', $text);
 
-        // gom khoảng trắng
         $text = preg_replace('/\s+/', ' ', $text);
 
         return trim($text);

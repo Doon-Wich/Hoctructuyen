@@ -42,4 +42,9 @@ return [
         'url' => env('QDRANT_URL'),
         'collection' => env('QDRANT_COLLECTION', 'course_documents'),
     ],
+
+    'groq' => [
+        'api_key' => env('GROQ_API_KEY'),
+        'chat_model' => env('GROQ_CHAT_MODEL', 'openai/gpt-oss-120b'),
+    ],
 ];

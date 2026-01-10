@@ -33,7 +33,7 @@ const data = [
 export default function AdminPage() {
   return (
     <div style={{ padding: 24 }}>
-      <Title level={2}>📊 Trang quản trị</Title>
+      <Title level={2}> Trang quản trị</Title>
       <Text type="secondary">
         Chào mừng bạn trở lại! Dưới đây là thống kê nhanh hôm nay.
       </Text>

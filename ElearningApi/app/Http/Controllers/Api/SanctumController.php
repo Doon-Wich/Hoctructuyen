@@ -27,7 +27,7 @@ class SanctumController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Email hoặc mật khẩu không chính xác.',
-            ], 401);
+            ], 400);
         }
 
         $user->tokens()->delete();

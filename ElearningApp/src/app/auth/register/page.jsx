@@ -116,7 +116,6 @@ export default function Register() {
           <Select placeholder="Chọn vai trò" allowClear>
             <Select.Option value={1}>Giáo viên</Select.Option>
             <Select.Option value={2}>Học sinh</Select.Option>
-            <Select.Option value={3}>Quản trị viên</Select.Option>
           </Select>
         </Form.Item>
 
