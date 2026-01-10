@@ -204,11 +204,7 @@ export default function CoursePage() {
           okText="Lưu"
           cancelText="Hủy"
         >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSubmit} 
-          >
+          <Form form={form} layout="vertical" onFinish={handleSubmit}>
             <Form.Item
               name="name"
               label="Tên khóa học"
@@ -216,12 +212,13 @@ export default function CoursePage() {
                 { required: true, message: "Vui lòng nhập tên khóa học" },
               ]}
             >
-              <Input placeholder="Nhập tên khóa học" />
+              <Input placeholder="Ví dụ: Lập trình React từ cơ bản đến nâng cao" />
             </Form.Item>
 
             <Form.Item
               name="description"
               label="Mô tả"
+              extra="Mô tả ngắn gọn nội dung và mục tiêu của khóa học"
               rules={[
                 { required: true, message: "Vui lòng nhập mô tả khóa học" },
                 { max: 500, message: "Mô tả không được vượt quá 500 ký tự" },
@@ -229,17 +226,18 @@ export default function CoursePage() {
             >
               <Input.TextArea
                 rows={3}
-                placeholder="Nhập mô tả ngắn gọn về khóa học"
+                placeholder="Khóa học giúp học viên nắm vững kiến thức nền tảng và thực hành..."
               />
             </Form.Item>
 
             <Form.Item
               name="category_id"
               label="Danh mục"
+              extra="Danh mục giúp phân loại và tìm kiếm khóa học dễ dàng hơn"
               rules={[{ required: true, message: "Vui lòng chọn danh mục" }]}
             >
               <Select
-                placeholder="Chọn danh mục"
+                placeholder="Chọn danh mục khóa học"
                 options={categories.map((c) => ({
                   label: c.name,
                   value: c.id,
@@ -250,6 +248,7 @@ export default function CoursePage() {
             <Form.Item
               name="price"
               label="Giá (VNĐ)"
+              extra="Nhập 0 nếu khóa học miễn phí"
               rules={[
                 { required: true, message: "Vui lòng nhập giá khóa học" },
                 { type: "number", min: 0, message: "Giá phải là số không âm" },
@@ -258,13 +257,14 @@ export default function CoursePage() {
               <InputNumber
                 min={0}
                 style={{ width: "100%" }}
-                placeholder="Nhập giá"
+                placeholder="Ví dụ: 500000"
               />
             </Form.Item>
 
             <Form.Item
               name="is_progress_limited"
               label="Giới hạn tiến độ"
+              extra="Bật để học viên phải hoàn thành từng chương theo thứ tự"
               valuePropName="checked"
             >
               <Switch />
