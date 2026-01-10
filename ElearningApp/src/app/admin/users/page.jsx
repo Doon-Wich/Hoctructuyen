@@ -11,7 +11,9 @@ import {
   Popconfirm,
   message,
   Select,
+  Tag,
 } from "antd";
+import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import axios from "@/utils/axios";
 
 export default function UserManagerPage() {
@@ -20,16 +22,13 @@ export default function UserManagerPage() {
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [form] = Form.useForm();
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
       const res = await axios.get("/api/users");
-      const data = Array.isArray(res.data) ? res.data : res.data.data;
-      setUsers(data || []);
-    } catch (error) {
-      console.error(error);
+      setUsers(Array.isArray(res.data) ? res.data : res.data.data || []);
+    } catch {
       message.error("Không thể tải danh sách người dùng");
     } finally {
       setLoading(false);
@@ -39,10 +38,8 @@ export default function UserManagerPage() {
   const fetchRoles = async () => {
     try {
       const res = await axios.get("/api/roles");
-      const data = Array.isArray(res.data) ? res.data : res.data.data;
-      setRoles(data || []);
-    } catch (error) {
-      console.error(error);
+      setRoles(Array.isArray(res.data) ? res.data : res.data.data || []);
+    } catch {
       message.error("Không thể tải danh sách vai trò");
     }
   };
@@ -52,9 +49,8 @@ export default function UserManagerPage() {
     fetchRoles();
   }, []);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (values) => {
     try {
-      const values = await form.validateFields();
       if (editingUser) {
         await axios.put(`/api/users/${editingUser.id}`, values);
         message.success("Cập nhật user thành công!");
@@ -64,10 +60,8 @@ export default function UserManagerPage() {
       }
       setIsModalOpen(false);
       setEditingUser(null);
-      form.resetFields();
       fetchUsers();
-    } catch (error) {
-      console.error(error);
+    } catch {
       message.error("Lưu thất bại, kiểm tra dữ liệu!");
     }
   };
@@ -77,51 +71,51 @@ export default function UserManagerPage() {
       await axios.delete(`/api/users/${id}`);
       message.success("Đã xóa người dùng!");
       fetchUsers();
-    } catch (error) {
-      console.error(error);
+    } catch {
       message.error("Không thể xóa người dùng!");
     }
   };
 
   const columns = [
-    { title: "ID", dataIndex: "id", key: "id" },
-    { title: "Họ và tên", dataIndex: "full_name", key: "full_name" },
-    { title: "Email", dataIndex: "email", key: "email" },
+    { title: "ID", dataIndex: "id", width: 70 },
+    { title: "Họ và tên", dataIndex: "full_name" },
+    { title: "Email", dataIndex: "email" },
     {
       title: "Vai trò",
-      dataIndex: ["role", "name"],
-      key: "role",
-      render: (_, record) => record?.role?.name || "—",
+      render: (_, r) => <Tag color="blue">{r?.role?.name || "—"}</Tag>,
     },
     {
       title: "Trạng thái",
-      dataIndex: "status",
-      key: "status",
-      render: (status) => (status ? "Active" : "Inactive"),
+      render: (_, r) =>
+        r.status ? (
+          <Tag color="green">Active</Tag>
+        ) : (
+          <Tag color="red">Inactive</Tag>
+        ),
     },
     {
       title: "Hành động",
-      key: "actions",
+      align: "center",
       render: (_, record) => (
         <Space>
           <Button
             type="link"
+            icon={<EditOutlined />}
             onClick={() => {
               setEditingUser(record);
-              form.setFieldsValue({
-                ...record,
-                role_id: record?.role?.id,
-              });
               setIsModalOpen(true);
             }}
           >
             Sửa
           </Button>
+
           <Popconfirm
             title="Xóa user này?"
+            okText="Xóa"
+            cancelText="Hủy"
             onConfirm={() => handleDelete(record.id)}
           >
-            <Button danger type="link">
+            <Button danger type="link" icon={<DeleteOutlined />}>
               Xóa
             </Button>
           </Popconfirm>
@@ -132,89 +126,67 @@ export default function UserManagerPage() {
 
   return (
     <div style={{ padding: 24 }}>
-      <h1 style={{ fontSize: 24, marginBottom: 16 }}> Quản lý tài khoản</h1>
-      <Button
-        type="primary"
-        style={{ marginBottom: 16 }}
-        onClick={() => {
-          form.resetFields();
-          setEditingUser(null);
-          setIsModalOpen(true);
-        }}
-      >
-        + Thêm tài khoản
-      </Button>
+      {/* Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+        <h2 style={{ margin: 0 }}>Quản lý tài khoản</h2>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => {
+            setEditingUser(null);
+            setIsModalOpen(true);
+          }}
+        >
+          Thêm tài khoản
+        </Button>
+      </div>
 
       <Table
-        dataSource={users || []}
-        columns={columns}
         rowKey="id"
         loading={loading}
+        dataSource={users}
+        columns={columns}
         pagination={{ pageSize: 5 }}
       />
 
       <Modal
-        title={editingUser ? "Sửa tài khoản" : "Thêm tài khoản"}
         open={isModalOpen}
+        title={editingUser ? "Sửa tài khoản" : "Thêm tài khoản"}
         onCancel={() => {
           setIsModalOpen(false);
           setEditingUser(null);
-          form.resetFields(); 
         }}
-        onOk={() => form.submit()}
         okText="Lưu"
         cancelText="Hủy"
+        width={520}
+        destroyOnHidden
+        footer={null}
       >
         <Form
-          form={form}
           layout="vertical"
           onFinish={handleSubmit}
+          initialValues={
+            editingUser
+              ? { ...editingUser, role_id: editingUser?.role?.id }
+              : { status: true }
+          }
         >
-          <Form.Item
-            name="full_name"
-            label="Họ và tên"
-            rules={[
-              { required: true, message: "Vui lòng nhập họ và tên" },
-              { max: 100, message: "Họ và tên không được vượt quá 100 ký tự" },
-            ]}
-          >
-            <Input placeholder="Nhập họ và tên" />
+          <Form.Item name="full_name" label="Họ và tên" rules={[{ required: true }]}>
+            <Input />
           </Form.Item>
 
-          <Form.Item
-            name="email"
-            label="Email"
-            rules={[
-              { required: true, message: "Vui lòng nhập email" },
-              { type: "email", message: "Email không hợp lệ" },
-            ]}
-          >
-            <Input placeholder="Nhập email người dùng" />
+          <Form.Item name="email" label="Email" rules={[{ required: true }, { type: "email" }]}>
+            <Input />
           </Form.Item>
 
           {!editingUser && (
-            <Form.Item
-              name="password"
-              label="Mật khẩu"
-              rules={[
-                { required: true, message: "Vui lòng nhập mật khẩu" },
-                {
-                  min: 6,
-                  message: "Mật khẩu phải có ít nhất 6 ký tự",
-                },
-              ]}
-            >
-              <Input.Password placeholder="Nhập mật khẩu" />
+            <Form.Item name="password" label="Mật khẩu" rules={[{ required: true, min: 6 }]}>
+              <Input.Password />
             </Form.Item>
           )}
 
-          <Form.Item
-            name="role_id"
-            label="Vai trò"
-            rules={[{ required: true, message: "Vui lòng chọn vai trò" }]}
-          >
+          <Form.Item name="role_id" label="Vai trò" rules={[{ required: true }]}>
             <Select
-              placeholder="Chọn vai trò"
               options={roles.map((r) => ({
                 label: r.name,
                 value: r.id,
@@ -224,6 +196,15 @@ export default function UserManagerPage() {
 
           <Form.Item name="status" label="Kích hoạt" valuePropName="checked">
             <Switch />
+          </Form.Item>
+
+          <Form.Item style={{ textAlign: "right" }}>
+            <Space>
+              <Button onClick={() => setIsModalOpen(false)}>Hủy</Button>
+              <Button type="primary" htmlType="submit">
+                Lưu
+              </Button>
+            </Space>
           </Form.Item>
         </Form>
       </Modal>
