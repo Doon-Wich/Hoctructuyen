@@ -1,6 +1,16 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Table, Button, Modal, Form, Input, message, Popconfirm, Select, Switch } from "antd";
+import {
+  Table,
+  Button,
+  Modal,
+  Form,
+  Input,
+  message,
+  Popconfirm,
+  Select,
+  Switch,
+} from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import axios from "@/utils/axios";
 import { useRouter } from "next/navigation";
@@ -168,14 +178,16 @@ export default function QuizManager() {
           <Form.Item
             label="Tên Bài kiểm tra"
             name="name"
+            extra="Tên hiển thị cho bài kiểm tra mà học viên sẽ thấy"
             rules={[{ required: true, message: "Nhập tên quiz!" }]}
           >
-            <Input placeholder="Nhập tên bài kiểm tra" />
+            <Input placeholder="Ví dụ: Kiểm tra cuối chương 1" />
           </Form.Item>
 
           <Form.Item
             label="Khóa học"
             name="course_id"
+            extra="Chọn khóa học mà bài kiểm tra này thuộc về"
             rules={[{ required: true, message: "Chọn khóa học!" }]}
           >
             <Select placeholder="Chọn khóa học" allowClear>
@@ -187,21 +199,34 @@ export default function QuizManager() {
             </Select>
           </Form.Item>
 
-          <Form.Item label="Số thứ tự" name="number">
-            <Input type="number" placeholder="Nhập số thứ tự" />
+          <Form.Item
+            label="Số thứ tự"
+            name="number"
+            extra="Thứ tự hiển thị của bài kiểm tra trong danh sách"
+          >
+            <Input type="number" placeholder="Ví dụ: 1, 2, 3..." />
           </Form.Item>
 
-          <Form.Item label="Thứ tự khóa học" name="course_order">
-            <Input type="number" placeholder="Nhập thứ tự khóa học" />
+          <Form.Item
+            label="Thứ tự khóa học"
+            name="course_order"
+            extra="Dùng để sắp xếp quiz theo tiến trình học"
+          >
+            <Input type="number" placeholder="Ví dụ: 1" />
           </Form.Item>
 
-          <Form.Item label="Điểm tối thiểu" name="min_pass_score">
-            <Input type="number" placeholder="Nhập điểm tối thiểu" />
+          <Form.Item
+            label="Điểm tối thiểu"
+            name="min_pass_score"
+            extra="Điểm tối thiểu để được xem là hoàn thành bài kiểm tra"
+          >
+            <Input type="number" placeholder="Ví dụ: 70" />
           </Form.Item>
 
           <Form.Item
             label="Bắt buộc đạt"
             name="is_pass_required"
+            extra="Bật nếu học viên bắt buộc phải đạt điểm tối thiểu mới được qua bài tiếp theo"
             valuePropName="checked"
           >
             <Switch />
