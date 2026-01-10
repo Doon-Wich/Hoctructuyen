@@ -26,16 +26,14 @@ export default function CategoryPage() {
       const res = await axios.get("/api/categories");
 
       let data = [];
-      if (Array.isArray(res.data)) {
-        data = res.data;
-      } else if (res.data && Array.isArray(res.data.data)) {
+      if (Array.isArray(res.data)) data = res.data;
+      else if (res.data && Array.isArray(res.data.data))
         data = res.data.data;
-      }
 
       setCategories(data || []);
     } catch (error) {
       console.error(error);
-      message.error("Lỗi khi tải danh mục");
+      message.error("Không thể tải danh sách danh mục");
       setCategories([]);
     } finally {
       setLoading(false);
@@ -55,15 +53,15 @@ export default function CategoryPage() {
         message.success("Cập nhật danh mục thành công!");
       } else {
         await axios.post("/api/categories", values);
-        message.success("Thêm danh mục thành công!");
+        message.success("Thêm danh mục mới thành công!");
       }
 
       form.resetFields();
       setIsModalOpen(false);
       setEditingCategory(null);
       fetchCategories();
-    } catch (error) {
-      message.error("Lưu thất bại!");
+    } catch {
+      message.error("Lưu thất bại, vui lòng kiểm tra dữ liệu!");
     }
   };
 
@@ -72,13 +70,13 @@ export default function CategoryPage() {
       await axios.delete(`/api/categories/${id}`);
       message.success("Đã xóa danh mục!");
       fetchCategories();
-    } catch (error) {
+    } catch {
       message.error("Không thể xóa danh mục!");
     }
   };
 
   const columns = [
-    { title: "ID", dataIndex: "id", key: "id" },
+    { title: "ID", dataIndex: "id", key: "id", width: 80 },
     { title: "Tên danh mục", dataIndex: "name", key: "name" },
     { title: "Mô tả", dataIndex: "description", key: "description" },
     {
@@ -97,7 +95,9 @@ export default function CategoryPage() {
             Sửa
           </Button>
           <Popconfirm
-            title="Xóa danh mục này?"
+            title="Bạn có chắc chắn muốn xóa danh mục này?"
+            okText="Xóa"
+            cancelText="Hủy"
             onConfirm={() => handleDelete(record.id)}
           >
             <Button danger type="link">
@@ -111,10 +111,13 @@ export default function CategoryPage() {
 
   return (
     <div style={{ padding: 24 }}>
-      <h1 style={{ fontSize: 24, marginBottom: 16 }}>
-        {" "}
+      <h1 style={{ fontSize: 24, marginBottom: 8 }}>
         Quản lý danh mục khóa học
       </h1>
+      <p style={{ color: "#666", marginBottom: 16 }}>
+        Danh mục dùng để phân loại các khóa học trong hệ thống
+      </p>
+
       <Button
         type="primary"
         style={{ marginBottom: 16 }}
@@ -143,18 +146,15 @@ export default function CategoryPage() {
           setEditingCategory(null);
           form.resetFields();
         }}
-        onOk={() => form.submit()} 
+        onOk={() => form.submit()}
         okText="Lưu"
         cancelText="Hủy"
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit} 
-        >
+        <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item
             name="name"
             label="Tên danh mục"
+            extra="Tên hiển thị của danh mục trong hệ thống"
             rules={[
               { required: true, message: "Vui lòng nhập tên danh mục" },
               {
@@ -163,12 +163,13 @@ export default function CategoryPage() {
               },
             ]}
           >
-            <Input placeholder="Nhập tên danh mục" />
+            <Input placeholder="Ví dụ: Lập trình Web, AI, Backend..." />
           </Form.Item>
 
           <Form.Item
             name="description"
             label="Mô tả"
+            extra="Mô tả ngắn gọn về danh mục (không bắt buộc)"
             rules={[
               {
                 max: 500,
@@ -176,7 +177,10 @@ export default function CategoryPage() {
               },
             ]}
           >
-            <Input.TextArea rows={3} placeholder="Nhập mô tả (nếu có)" />
+            <Input.TextArea
+              rows={3}
+              placeholder="Nhập mô tả cho danh mục (nếu có)"
+            />
           </Form.Item>
         </Form>
       </Modal>
