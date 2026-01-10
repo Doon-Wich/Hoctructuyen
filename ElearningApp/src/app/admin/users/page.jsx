@@ -127,13 +127,7 @@ export default function UserManagerPage() {
   return (
     <div style={{ padding: 24 }}>
       {/* Header */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 16,
-        }}
-      >
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
         <h2 style={{ margin: 0 }}>Quản lý tài khoản</h2>
         <Button
           type="primary"
@@ -177,45 +171,22 @@ export default function UserManagerPage() {
               : { status: true }
           }
         >
-          <Form.Item
-            name="full_name"
-            label="Họ và tên"
-            rules={[{ required: true, message: "Vui lòng nhập họ và tên" }]}
-          >
-            <Input placeholder="Nhập họ và tên người dùng" />
+          <Form.Item name="full_name" label="Họ và tên" rules={[{ required: true }]}>
+            <Input />
           </Form.Item>
 
-          <Form.Item
-            name="email"
-            label="Email"
-            rules={[
-              { required: true, message: "Vui lòng nhập email" },
-              { type: "email", message: "Email không hợp lệ" },
-            ]}
-          >
-            <Input placeholder="example@email.com" />
+          <Form.Item name="email" label="Email" rules={[{ required: true }, { type: "email" }]}>
+            <Input />
           </Form.Item>
 
           {!editingUser && (
-            <Form.Item
-              name="password"
-              label="Mật khẩu"
-              rules={[
-                { required: true, message: "Vui lòng nhập mật khẩu" },
-                { min: 6, message: "Mật khẩu tối thiểu 6 ký tự" },
-              ]}
-            >
-              <Input.Password placeholder="Nhập mật khẩu đăng nhập" />
+            <Form.Item name="password" label="Mật khẩu" rules={[{ required: true, min: 6 }]}>
+              <Input.Password />
             </Form.Item>
           )}
 
-          <Form.Item
-            name="role_id"
-            label="Vai trò"
-            rules={[{ required: true, message: "Vui lòng chọn vai trò" }]}
-          >
+          <Form.Item name="role_id" label="Vai trò" rules={[{ required: true }]}>
             <Select
-              placeholder="Chọn vai trò cho tài khoản"
               options={roles.map((r) => ({
                 label: r.name,
                 value: r.id,
@@ -223,12 +194,7 @@ export default function UserManagerPage() {
             />
           </Form.Item>
 
-          <Form.Item
-            name="status"
-            label="Kích hoạt"
-            valuePropName="checked"
-            extra="Tắt nếu muốn vô hiệu hóa tài khoản"
-          >
+          <Form.Item name="status" label="Kích hoạt" valuePropName="checked">
             <Switch />
           </Form.Item>
 
@@ -236,7 +202,7 @@ export default function UserManagerPage() {
             <Space>
               <Button onClick={() => setIsModalOpen(false)}>Hủy</Button>
               <Button type="primary" htmlType="submit">
-                Lưu thay đổi
+                Lưu
               </Button>
             </Space>
           </Form.Item>
