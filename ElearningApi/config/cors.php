@@ -16,7 +16,7 @@ return [
 
     'allowed_methods' => ['*'], // cho phép tất cả phương thức GET, POST, PUT, DELETE…
 
-    'allowed_origins' => ['http://localhost:3000'], // domain của FE
+    'allowed_origins' => ['*'],
 
     'allowed_origins_patterns' => [],
 
